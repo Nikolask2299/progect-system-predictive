@@ -1,0 +1,129 @@
+networks:
+  backend-net:
+    driver: bridge
+  frontend-net:
+    driver: bridge
+  internal-net:
+    driver: bridge
+  database-net:
+    driver: bridge
+
+volumes:
+  kafka-data:
+    driver: local
+  timescale-data:
+    driver: local
+
+services:
+  database-service:
+    image: timescale/timescaledb:latest-pg17
+    container_name: database-service-pdm
+    restart: unless-stopped
+
+    depends_on:
+      - "broker-service"
+
+    ports:
+      - "5432:5432"
+
+    environment:
+      POSTGRES_USER: ${TSDB_USER}
+      POSTGRES_PASSWORD: ${TSDB_PASSWORD}
+      POSTGRES_DB: ${TSDB_NAME}
+      TIMESCALEDB_TELEMETRY: off
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+
+    command: >
+      postgres
+        -c shared_buffers=512MB
+        -c max_connections=200
+        -c max_wal_size=1GB
+        -c timescaledb.max_background_workers=4
+
+    shm_size: '256mb'
+    networks:
+      - "database-net"
+    volumes:
+      - "timescale-data:/home/postgres/pgdata/data"
+      - "./prediction-ts-init-db:/docker-entrypoint-initdb.d"
+
+  pg-admin:
+    image: dpage/pgadmin4
+    restart: always
+    depends_on:
+      - "database-service"
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADM_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADM_PASSWORD}
+      PGADMIN_LISTEN_PORT: 8100
+
+    ports:
+      - "8100:8100"
+    
+    networks:
+      - "database-net"
+
+  broker-service:
+    image: apache/kafka:4.3.1
+    container_name: broker-service-pdm
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+      - "9094:9094"
+
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker, controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker-service:9093
+
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092, CONTROLLER://0.0.0.0:9093, EXTERNAL://0.0.0.0:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-service:9092, EXTERNAL://localhost:9094
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT, EXTERNAL:PLAINTEXT, PLAINTEXT:PLAINTEXT
+      
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_NUM_PARTITIONS: 4
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_HEAP_OPTS: -Xms512M -Xms512M
+
+    networks:
+      - "backend-net"
+      - "database-net"
+      - "internal-net"
+    
+    volumes:
+      - "kafka-data:/var/lib/kafka/data"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui-pdm
+    restart: unless-stopped
+
+    ports:
+      - "8088:8088"
+    
+    depends_on:
+      broker-service:
+        condition: service_started
+
+    networks:
+      - internal-net
+
+    environment:
+      SERVER_PORT: 8088
+
+      AUTH_TYPE: LOGIN_FORM
+      SPRING_SECURITY_USER_NAME: ${KFUI_USER}
+      SPRING_SECURITY_USER_PASSWORD: ${KFUI_PASSWORD}
+
+      KAFKA_CLUSTER_0_NAME: "Local DEV Cluster"
+      KAFKA_CLUSTER_0_BOOTSTRAP_SERVERS: "broker-service:9092"
+
+
+    
+
