@@ -9,13 +9,15 @@ import com.project.pdm.ingestion.ingestion_service.repository.TelemetryRepositor
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.*;
 
@@ -23,9 +25,10 @@ import java.util.concurrent.atomic.*;
 @Service
 @RequiredArgsConstructor
 public class TelemetryService {
+    private final String SQL_QUERY = "INSERT INTO telemetry (time, sensor_id, value, quality) VALUES (?, ?, ?, ?)";
 
-    private final ConcurrentHashMap<Integer, ArrayBlockingQueue<TelemetryRecord>> telemetryRecordBuffer = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Integer, SensorWindowBuffer> aggregationMetricsBuffer = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Integer, ArrayBlockingQueue<TelemetryRecord>> telemetryRecordBuffer = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Integer, SensorWindowBuffer> aggregationMetricsBuffer = new ConcurrentHashMap<>();
 
     private final TelemetryRepository telemetryRepository;
     private final TelemetryAggregationRepository telemetryAggregationRepository;
@@ -44,6 +47,32 @@ public class TelemetryService {
                             .addValue(telemetryRecord.getValue());
                 });
         log.info("Telemetry record saving in buffer: {}", telemetryRecords.size());
+    }
+
+    @Scheduled(fixedRate = 5000, initialDelay = 10000)
+    private void processBufferTelemetry() {
+        log.info("Process Buffer Telemetry Started");
+        var bufferRecord = telemetryRecordBuffer;
+        var bufferMetric = aggregationMetricsBuffer;
+        this.telemetryRecordBuffer = new ConcurrentHashMap<>();
+        this.aggregationMetricsBuffer = new ConcurrentHashMap<>();
+
+        bufferRecord.forEach(5, (key, buffer) -> {
+            try {
+                bufferMetric.get(key).calculateStandardDeviation(buffer);
+                TelemetryAggregation telemetryAggregation = bufferMetric.get(key).toEntityAggregation(key);
+                telemetryAggregationRepository.save(telemetryAggregation);
+                jdbcTemplate.batchUpdate(SQL_QUERY, buffer.stream().toList(), buffer.size(),
+                        (ps, record) -> {
+                            ps.setTimestamp(1, Timestamp.from(record.getId().timestamp()));
+                            ps.setInt(2, record.getId().sensorId());
+                            ps.setDouble(3, record.getValue());
+                            ps.setString(4, record.getQuality());
+                        });
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private static class SensorWindowBuffer {
@@ -67,7 +96,7 @@ public class TelemetryService {
             return mean.get();
         }
 
-        public Double calculateStandardDeviation(BlockingDeque<TelemetryRecord> telemetryRecords) throws Exception {
+        public Double calculateStandardDeviation(BlockingQueue<TelemetryRecord> telemetryRecords) throws Exception {
             getMeanAggregation();
             double mean = this.mean.get();
             DoubleAdder summSquareDiff = new DoubleAdder();

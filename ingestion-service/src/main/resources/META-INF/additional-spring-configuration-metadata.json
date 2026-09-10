@@ -1,0 +1,87 @@
+{"properties": [
+  {
+    "name": "spring.jpa.properties.hibernate.format_sql",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.jpa.properties.hibernate.format_sql'"
+  },
+  {
+    "name": "spring.jpa.properties.hibernate.dialect",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.jpa.properties.hibernate.dialect'"
+  },
+  {
+    "name": "spring.kafka.bootstrap-servers",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.bootstrap-servers'"
+  },
+  {
+    "name": "spring.kafka.consumer.group-id",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.consumer.group-id'"
+  },
+  {
+    "name": "spring.kafka.producer.key-serializer",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.producer.key-serializer'"
+  },
+  {
+    "name": "spring.kafka.consumer.auto-offset-reset",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.consumer.auto-offset-reset'"
+  },
+  {
+    "name": "spring.kafka.consumer.key-deserializer",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.consumer.key-deserializer'"
+  },
+  {
+    "name": "spring.kafka.consumer.value-deserializer",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.consumer.value-deserializer'"
+  },
+  {
+    "name": "spring.kafka.consumer.properties.spring.json.trusted.packages",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.consumer.properties.spring.json.trusted.packages'"
+  },
+  {
+    "name": "spring.kafka.consumer.max-pool-records",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.consumer.max-pool-records'"
+  },
+  {
+    "name": "spring.kafka.consumer.max-pool-records",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.consumer.max-pool-records'"
+  },
+  {
+    "name": "spring.kafka.producer.value-serializer",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.producer.value-serializer'"
+  },
+  {
+    "name": "spring.kafka.producer.acks",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.producer.acks'"
+  },
+  {
+    "name": "spring.kafka.producer.retries",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.producer.retries'"
+  },
+  {
+    "name": "spring.kafka.producer.properties.spring.json.add.type.headers",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.producer.properties.spring.json.add.type.headers'"
+  },
+  {
+    "name": "management.metrics.prometheus.metrics.export.enabled",
+    "type": "java.lang.String",
+    "description": "A description for 'management.metrics.prometheus.metrics.export.enabled'"
+  },
+  {
+    "name": "spring.kafka.bootstrap-server",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.kafka.bootstrap-server'"
+  }
+]}

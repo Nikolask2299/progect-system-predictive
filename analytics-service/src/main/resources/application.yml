@@ -1,0 +1,88 @@
+spring:
+  application:
+    name: ${PDM_NAME_SERVICE:pdm-prediction-service}
+  profiles:
+    active: dev
+
+  jpa: 
+    hibernate.ddl-auto: validate
+    show-sql: false
+    properties.hibernate:
+      format_sql: true 
+      dialect : org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+
+  datasource:
+    url: jdbc:postgresql://database-service:5432/PREDICTIONS_SERVICE_DB
+    username: ${DB_USER:ADMIN}
+    password: ${DB_PASSWORD:q1w2e3r4t5y6u7i8o9p0}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 25
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout : 600000
+      max-lifetime: 1800000
+      pool-name: PDM-HikariPool
+      connection-test-query: SELECT 1
+  
+  kafka:
+    bootstrap-servers: broker-service:9092
+    consumer:
+      group-id: pdm-telemetry-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer : org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.project.pdm.prediction.model.dto"
+      max-pool-records: 500
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks : all
+      retries: 3
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: 8081
+  shutdown: graceful
+  servlet:
+   context-path : /api/v1
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    accept-count: 100
+    max-connections: 10000
+    connection-timeout: 5000
+
+logging:
+  level:
+    root: INFO
+    com.project.pdm: DEBUG
+    org.springframework.web: WARN
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+info:
+  app: 
+    name: ${spring.application.name}
+    description: Service for ingesting telemetry data
+    version: 1.0
+    java-version: ${java.version}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    prometheus:
+      metrics:
+        export:
+          enabled: true

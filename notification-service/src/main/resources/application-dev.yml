@@ -1,0 +1,27 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/PREDICTIONS_SERVICE_DB
+    username: ADMIN
+    password: q1w2e3r4t5y6u7i8o9p0
+  kafka:
+    bootstrap-servers: localhost:9092
+  jpa:
+    show-sql: true
+
+server:
+  port: 8081
+
+logging:
+  level:
+    com.project.pdm: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

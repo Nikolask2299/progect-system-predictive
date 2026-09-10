@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: prediction-ts-db-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/PREDICTIONS_SERVICE_DB
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+    baseline-on-migrate: true
+    baseline-version: 0
+    baseline-description: << Initial Baseline >>
+
+    validate-on-migrate: true
+    fail-on-missing-locations: true
+    table: prediction_ts_flyway_schema_history
+
+    schemas:
+      - prediction_schema
+
+    out-of-order: false
+    skip-default-callbacks: false
+    skip-default-resolvers: false
+    clean-disabled: true
+    encoding: UTF-8
+
+    user: prediction_flyway_user
+    password: q1w2e3r4t5y6u7i8o9p0
+    url: jdbc:postgresql://localhost:5432/PREDICTIONS_SERVICE_DB
+    driver-class-name: org.postgresql.Driver

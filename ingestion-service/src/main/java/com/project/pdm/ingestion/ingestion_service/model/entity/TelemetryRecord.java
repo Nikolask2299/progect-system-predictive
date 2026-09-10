@@ -22,9 +22,17 @@ public class TelemetryRecord {
     private double value;
     private String quality;
 
+    public Integer getSensorId() {
+        return id != null ? id.sensorId() : null;
+    }
+
+    public Instant getTimestamp() {
+        return id != null ? id.timestamp() : null;
+    }
+
     @Embeddable
     public record TelemetryID(
-        Instant timestamp,
+            @Column(name = "time") Instant timestamp,
         Integer sensorId
     ){}
 
