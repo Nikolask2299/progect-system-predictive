@@ -9,9 +9,17 @@ networks:
     driver: bridge
 
 volumes:
+  pgadmin-data:
+    driver: local
   kafka-data:
     driver: local
   timescale-data:
+    driver: local
+  postgres-data:
+    driver: local
+  kafka-secrets:
+    driver: local
+  kafka-config:
     driver: local
 
 services:
@@ -33,6 +41,13 @@ services:
       TIMESCALEDB_TELEMETRY: off
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TSDB_USER} -d ${TSDB_NAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
     command: >
       postgres
         -c shared_buffers=512MB
@@ -42,10 +57,11 @@ services:
 
     shm_size: '256mb'
     networks:
-      - "database-net"
+      - database-net
     volumes:
+      - "postgres-data:/var/lib/postgresql/data"
       - "timescale-data:/home/postgres/pgdata/data"
-      - "./prediction-ts-init-db:/docker-entrypoint-initdb.d"
+     # - "./prediction-ts-init-db:/docker-entrypoint-initdb.d"
 
   pg-admin:
     image: dpage/pgadmin4
@@ -62,7 +78,10 @@ services:
       - "8100:8100"
     
     networks:
-      - "database-net"
+      - database-net
+
+    volumes:
+      - "pgadmin-data:/var/lib/pgadmin"
 
   broker-service:
     image: apache/kafka:4.3.1
@@ -72,6 +91,13 @@ services:
       - "9092:9092"
       - "9093:9093"
       - "9094:9094"
+
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
     environment:
       KAFKA_NODE_ID: 1
@@ -92,12 +118,14 @@ services:
       KAFKA_HEAP_OPTS: -Xms512M -Xms512M
 
     networks:
-      - "backend-net"
-      - "database-net"
-      - "internal-net"
+      - backend-net
+      - database-net
+      - internal-net
     
     volumes:
       - "kafka-data:/var/lib/kafka/data"
+      - "kafka-secrets:/etc/kafka/secrets"
+      - "kafka-config:/mnt/shared/config"
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -123,6 +151,7 @@ services:
 
       KAFKA_CLUSTER_0_NAME: "Local DEV Cluster"
       KAFKA_CLUSTER_0_BOOTSTRAP_SERVERS: "broker-service:9092"
+      KAFKA_CLUSTER_0_ZOOKEEPER: "localhost:2181"
 
 
     

@@ -1,3 +1,5 @@
+CREATE SCHEMA IF NOT EXISTS PREDICTION_SCHEMA;
+
 -- 1. Таблица оборудования (PostgreSQL)
 CREATE TABLE devices (
     id BIGSERIAL PRIMARY KEY,
