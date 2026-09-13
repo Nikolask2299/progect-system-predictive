@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface TelemetryRepository extends JpaRepository<TelemetryRecord, TelemetryRecord.TelemetryID>{
 
-   //boolean existsBySensorId(@Param("sensorId") Integer sensorId);
+   //boolean existsBySensorId(Integer sensorId);
 
    //boolean existBySensorIdAndTimestamp(TelemetryRecord.TelemetryID id);
 

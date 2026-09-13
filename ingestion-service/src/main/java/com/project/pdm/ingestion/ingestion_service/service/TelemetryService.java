@@ -6,8 +6,11 @@ import com.project.pdm.ingestion.ingestion_service.model.entity.TelemetryAggrega
 import com.project.pdm.ingestion.ingestion_service.model.entity.TelemetryRecord;
 import com.project.pdm.ingestion.ingestion_service.repository.TelemetryAggregationRepository;
 import com.project.pdm.ingestion.ingestion_service.repository.TelemetryRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.ApplicationContextEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -25,7 +28,7 @@ import java.util.concurrent.atomic.*;
 @Service
 @RequiredArgsConstructor
 public class TelemetryService {
-    private final String SQL_QUERY = "INSERT INTO telemetry (time, sensor_id, value, quality) VALUES (?, ?, ?, ?)";
+    private final String SQL_QUERY = "INSERT INTO prediction_schema.telemetry (time, sensor_id, value, quality) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING";
 
     private ConcurrentHashMap<Integer, ArrayBlockingQueue<TelemetryRecord>> telemetryRecordBuffer = new ConcurrentHashMap<>();
     private ConcurrentHashMap<Integer, SensorWindowBuffer> aggregationMetricsBuffer = new ConcurrentHashMap<>();
@@ -35,6 +38,7 @@ public class TelemetryService {
     private final JdbcTemplate jdbcTemplate;
 
     public void saveProcessTelemetry(List<TelemetryDTO> telemetryRecords) {
+        log.info("Telemetry record saving in buffer: {}", telemetryRecords.size());
         telemetryRecords.stream()
                 .filter(Objects::nonNull)
                 .map(TelemetryRecord::toEntity)
@@ -46,22 +50,27 @@ public class TelemetryService {
                             l -> new SensorWindowBuffer())
                             .addValue(telemetryRecord.getValue());
                 });
-        log.info("Telemetry record saving in buffer: {}", telemetryRecords.size());
+    }
+
+    @EventListener(ApplicationContextEvent.class)
+    public void closeTelemetryService() {
+        log.info("Closing Telemetry Service");
+        processBufferTelemetry();
     }
 
     @Scheduled(fixedRate = 5000, initialDelay = 10000)
-    private void processBufferTelemetry() {
+    protected void processBufferTelemetry() {
         log.info("Process Buffer Telemetry Started");
         var bufferRecord = telemetryRecordBuffer;
         var bufferMetric = aggregationMetricsBuffer;
         this.telemetryRecordBuffer = new ConcurrentHashMap<>();
         this.aggregationMetricsBuffer = new ConcurrentHashMap<>();
-
         bufferRecord.forEach(5, (key, buffer) -> {
             try {
                 bufferMetric.get(key).calculateStandardDeviation(buffer);
                 TelemetryAggregation telemetryAggregation = bufferMetric.get(key).toEntityAggregation(key);
                 telemetryAggregationRepository.save(telemetryAggregation);
+                log.info("Telemetry aggregation saved: {}", telemetryAggregation);
                 jdbcTemplate.batchUpdate(SQL_QUERY, buffer.stream().toList(), buffer.size(),
                         (ps, record) -> {
                             ps.setTimestamp(1, Timestamp.from(record.getId().timestamp()));
@@ -69,10 +78,13 @@ public class TelemetryService {
                             ps.setDouble(3, record.getValue());
                             ps.setString(4, record.getQuality());
                         });
+                log.info("Telemetry batch saved count: {}", buffer.size());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
+
+
     }
 
     private static class SensorWindowBuffer {

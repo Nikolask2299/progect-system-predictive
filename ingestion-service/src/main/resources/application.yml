@@ -29,14 +29,21 @@ spring:
   
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:broker-service:9092}
+    listener:
+      ack-mode: manual
+      auto-startup: true
+      type: batch
+      poll-timeout: 1000
     consumer:
       group-id: pdm-telemetry-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer : org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      max-pool-records: 1000
       properties:
-        spring.json.trusted.packages: "com.project.pdm.prediction.model.dto"
-      max-pool-records: 500
+        spring.json.trusted.packages: com.project.pdm.ingestion.ingestion_service.model.dto
+        spring.json.value.default.type: com.project.pdm.ingestion.ingestion_service.model.dto.TelemetryDTO
+        max.partition.fetch.bytes: 1048576
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
@@ -46,7 +53,7 @@ spring:
         spring.json.add.type.headers: false
 
 server:
-  port: 8081
+  port: 8080
   shutdown: graceful
   servlet:
    context-path : /api/v1

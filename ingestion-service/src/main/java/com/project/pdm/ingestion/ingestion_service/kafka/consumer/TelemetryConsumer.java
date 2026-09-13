@@ -19,11 +19,7 @@ public class TelemetryConsumer {
 
     private final TelemetryService telemetryService;
 
-
-    @KafkaListener(topics = "${app.kafka.topic}",
-            concurrency = "3",
-            ackMode = "BATCH"
-    )
+    @KafkaListener(topics = "${app.kafka.topic}", groupId = "${app.kafka.group-id}", concurrency = "3")
     public void telemetryConsumerListener(List<TelemetryDTO> dtoConsumerRecords, Acknowledgment acknowledgment) {
         log.info("Received telemetry message {} count.", dtoConsumerRecords.size());
         telemetryService.saveProcessTelemetry(dtoConsumerRecords);

@@ -1,0 +1,19 @@
+app:
+  topic: telemetry.raw
+  count: 10
+
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    producer:
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      acks: 1
+      retries: 3
+      batch-size: 65536
+      properties:
+        spring.json.add.type.headers: false
+        linger-ms: 50
+        compression.type: lz4
+

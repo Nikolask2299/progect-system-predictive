@@ -61,13 +61,11 @@ services:
     volumes:
       - "postgres-data:/var/lib/postgresql/data"
       - "timescale-data:/home/postgres/pgdata/data"
-     # - "./prediction-ts-init-db:/docker-entrypoint-initdb.d"
+      # - "./prediction-ts-init-db:/docker-entrypoint-initdb.d"
 
   pg-admin:
     image: dpage/pgadmin4
     restart: always
-    depends_on:
-      - "database-service"
 
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADM_EMAIL}
@@ -75,7 +73,7 @@ services:
       PGADMIN_LISTEN_PORT: 8100
 
     ports:
-      - "8100:8100"
+      - "9100:8100"
     
     networks:
       - database-net
@@ -93,7 +91,7 @@ services:
       - "9094:9094"
 
     healthcheck:
-      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "broker-service:9092", "--list"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -118,7 +116,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-      KAFKA_HEAP_OPTS: -Xms512M -Xms512M
+      KAFKA_HEAP_OPTS: -Xms512M -Xmx1G
 
     networks:
       - backend-net
@@ -136,11 +134,11 @@ services:
     restart: unless-stopped
 
     ports:
-      - "8088:8088"
+      - "9108:8088"
     
     depends_on:
       broker-service:
-        condition: service_started
+        condition: service_healthy
 
     networks:
       - internal-net
@@ -152,9 +150,8 @@ services:
       SPRING_SECURITY_USER_NAME: ${KFUI_USER}
       SPRING_SECURITY_USER_PASSWORD: ${KFUI_PASSWORD}
 
-      KAFKA_CLUSTER_0_NAME: "Local DEV Cluster"
-      KAFKA_CLUSTER_0_BOOTSTRAP_SERVERS: "broker-service:9092"
-      KAFKA_CLUSTER_0_ZOOKEEPER: "localhost:2181"
+      KAFKA_CLUSTERS_0_NAME: Local DEV Cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker-service:9092
 
 
     
