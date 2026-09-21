@@ -33,5 +33,4 @@ public class PredictionAggregation {
     private Instant calculate_at;
 
     private String maintenance_recommendation;
-
 }

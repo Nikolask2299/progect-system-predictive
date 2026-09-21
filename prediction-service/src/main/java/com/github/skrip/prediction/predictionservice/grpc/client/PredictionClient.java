@@ -3,6 +3,7 @@ package com.github.skrip.prediction.predictionservice.grpc.client;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionRequest;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionResponse;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionServiceGrpc;
+import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -29,9 +30,9 @@ public class PredictionClient {
                 .withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS);
         try {
             return blockingStub.getPrediction(request);
-        } catch (Exception e) {
+        } catch (StatusRuntimeException e) {
             log.error("Error while getting prediction", e);
-            return null;
         }
+        return null;
     }
 }
