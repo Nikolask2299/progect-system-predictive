@@ -1,6 +1,6 @@
 spring:
   application:
-    name: ${PDM_NAME_SERVICE:pdm-ingestiontion-service}
+    name: ${PDM_NAME_SERVICE:pdm-prediction-service}
   profiles:
     active: dev
 
@@ -35,14 +35,14 @@ spring:
       type: batch
       poll-timeout: 1000
     consumer:
-      group-id: pdm-telemetry-group
+      group-id: pdm-prediction-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer : org.springframework.kafka.support.serializer.JacksonJsonDeserializer
       max-pool-records: 1000
       properties:
         spring.json.trusted.packages: com.project.pdm.ingestion.ingestion_service.model.dto
-        spring.json.value.default.type: com.project.pdm.ingestion.ingestion_service.model.dto.TelemetryDTO
+        spring.json.value.default.type: com.project.pdm.ingestion.ingestion_service.model.dto.
         max.partition.fetch.bytes: 1048576
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -51,6 +51,19 @@ spring:
       retries: 3
       properties:
         spring.json.add.type.headers: false
+
+  grpc:
+    client:
+      channels:
+        local:
+          address: ${LOCAL_SERVICE_HOST:localhost}:${LOCAL_SERVICE_PORT:50050}
+      prediction-service:
+        address: static://${PREDICTION_SERVICE_HOST:localhost}:${PREDICTION_SERVICE_PORT:50050}
+        negotation-type: PLAINTEXT
+        enable-keep-alive: true
+        keep-alive-time: 10s
+        keep-alive-timeout: 5s
+        max-alive-without-calls: true
 
 server:
   port: 8080

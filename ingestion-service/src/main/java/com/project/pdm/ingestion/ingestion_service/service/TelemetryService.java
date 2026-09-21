@@ -6,12 +6,13 @@ import com.project.pdm.ingestion.ingestion_service.model.entity.TelemetryAggrega
 import com.project.pdm.ingestion.ingestion_service.model.entity.TelemetryRecord;
 import com.project.pdm.ingestion.ingestion_service.repository.TelemetryAggregationRepository;
 import com.project.pdm.ingestion.ingestion_service.repository.TelemetryRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ApplicationContextEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -37,8 +38,12 @@ public class TelemetryService {
     private final TelemetryAggregationRepository telemetryAggregationRepository;
     private final JdbcTemplate jdbcTemplate;
 
+    @Value("${app.kafka.topic-aggregation}")
+    private String telemetryTopic;
+
+    private final KafkaTemplate<String, TelemetryAggregation> telemetryAggregationKafkaTemplate;
+
     public void saveProcessTelemetry(List<TelemetryDTO> telemetryRecords) {
-        log.info("Telemetry record saving in buffer: {}", telemetryRecords.size());
         telemetryRecords.stream()
                 .filter(Objects::nonNull)
                 .map(TelemetryRecord::toEntity)
@@ -50,6 +55,7 @@ public class TelemetryService {
                             l -> new SensorWindowBuffer())
                             .addValue(telemetryRecord.getValue());
                 });
+        log.info("Telemetry record saving in buffer: {}", telemetryRecords.size());
     }
 
     @EventListener(ApplicationContextEvent.class)
@@ -65,20 +71,21 @@ public class TelemetryService {
         var bufferMetric = aggregationMetricsBuffer;
         this.telemetryRecordBuffer = new ConcurrentHashMap<>();
         this.aggregationMetricsBuffer = new ConcurrentHashMap<>();
-        bufferRecord.forEach(5, (key, buffer) -> {
+        bufferRecord.forEach(4, (key, buffer) -> {
             try {
                 bufferMetric.get(key).calculateStandardDeviation(buffer);
                 TelemetryAggregation telemetryAggregation = bufferMetric.get(key).toEntityAggregation(key);
                 telemetryAggregationRepository.save(telemetryAggregation);
-                log.info("Telemetry aggregation saved: {}", telemetryAggregation);
-                jdbcTemplate.batchUpdate(SQL_QUERY, buffer.stream().toList(), buffer.size(),
+                telemetryAggregationKafkaTemplate.send(telemetryTopic, telemetryAggregation);
+                log.info("Telemetry SENSOR ID {} aggregation saved: {}", key,telemetryAggregation);
+                int[][] batch = jdbcTemplate.batchUpdate(SQL_QUERY, buffer.stream().toList(), buffer.size(),
                         (ps, record) -> {
                             ps.setTimestamp(1, Timestamp.from(record.getId().timestamp()));
                             ps.setInt(2, record.getId().sensorId());
                             ps.setDouble(3, record.getValue());
                             ps.setString(4, record.getQuality());
                         });
-                log.info("Telemetry batch saved count: {}", buffer.size());
+                log.info("Telemetry SENSOR ID {} batch saved count: {}", key, batch[0].length);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

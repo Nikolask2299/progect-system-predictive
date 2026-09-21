@@ -1,0 +1,17 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:tc:postgresql:17:///testdb
+    username: test
+    password: test 
+  kafka:
+    bootstrap-server: ${spring.embedded.kafka.brokers}
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+logging:
+  level:
+    root: ERROR

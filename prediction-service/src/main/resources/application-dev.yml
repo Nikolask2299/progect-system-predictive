@@ -12,7 +12,7 @@ spring:
     bootstrap-servers: localhost:9094
 
 server:
-  port: 9101
+  port: 9102
 
 logging:
   level:
@@ -27,7 +27,7 @@ management:
         include: "*"
 
 app:
-    kafka:
-      topic-aggregation: "telemetry-aggregation.raw"
-      topic: "telemetry.raw"
-      group-id: "ingest-service-pdm"
+  pdm.ml.timeout-ms: 1500
+  kafka:
+    topic-aggregation: "telemetry-aggregation.raw"
+    group-id: "prediction-service-pdm"

@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package com.github.skrip.prediction.v1;
+
+import "google/protobuf/timestamp.proto";
+
+service PredictionService {
+  rpc GetPrediction (PredictionRequest) returns (PredictionResponse);
+}
+
+enum PredictionSource {
+  PREDICTION_SOURCE_ACTUAL = 0;
+  PREDICTION_SOURCE_CACHED = 1;
+  PREDICTION_SOURCE_UNSPECIFIED = 3;
+}
+
+message PredictionResponse {
+  int64 device_id = 1;
+  google.protobuf.Timestamp calculate_at = 2;
+  double rul_hours = 3;
+  double confidence = 4;
+  double risk_score = 5;
+  PredictionSource source = 6;
+  string maintenance_recommendation = 7;
+}
+
+message PredictionRequest {
+  int64 device_id = 1;
+  google.protobuf.Timestamp window_start = 2;
+  google.protobuf.Timestamp window_end = 3;
+  repeated SensorAggregation sensors = 4;
+}
+
+message SensorAggregation {
+  int64 sensor_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  int64 count = 3;
+  double sum = 4;
+  double mean = 5;
+  double max = 6;
+  double min = 7;
+  double std_dev = 8;
+}

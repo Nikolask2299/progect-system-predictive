@@ -31,7 +31,7 @@ public class TelemetryGenerate {
     @EventListener(ApplicationReadyEvent.class)
     public void initTelemetryGenerate() {
         for (int i = 1; i <= count; i++) {
-            var treadGen = new TelemetryThreadGen(i, 1000, 10);
+            var treadGen = new TelemetryThreadGen(i, 1000, 1);
             executor.execute(treadGen);
         }
     }
@@ -54,7 +54,7 @@ public class TelemetryGenerate {
                         .forEach(dto -> kafkaTemplate.send(topic, dto));
                  log.info("Thread {} send message DTO {}", Thread.currentThread().getName(), sizeBatch);
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(10);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
