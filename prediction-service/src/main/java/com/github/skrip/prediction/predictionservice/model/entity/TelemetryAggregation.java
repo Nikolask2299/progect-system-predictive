@@ -5,6 +5,7 @@ import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
@@ -13,6 +14,7 @@ import java.time.Instant;
 @Table(name ="telemetry_aggregation", schema = "prediction_schema")
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
 public class TelemetryAggregation {
     @EmbeddedId
     private TelemetryID id;

@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Set;
 
 @Setter
 @Getter
@@ -28,4 +30,8 @@ public class Device {
     private String locationId;
 
     private Instant installDate;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "device_id")
+    private List<PredictionAggregation> predictionAggregations;
 }

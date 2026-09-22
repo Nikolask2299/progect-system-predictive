@@ -18,7 +18,6 @@ public class PredictionAggregation {
     @Id
     private Long id;
 
-    @JoinColumn(name = "device_id")
     private Long device_id;
 
     private Double rul_hours;
