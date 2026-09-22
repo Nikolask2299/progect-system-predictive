@@ -3,12 +3,10 @@ package com.github.skrip.prediction.predictionservice.utils;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionRequest;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionResponse;
 import com.github.skrip.prediction.predictionservice.grpc.SensorAggregation;
+import com.github.skrip.prediction.predictionservice.model.entity.DevicePredictionAggregation;
 import com.github.skrip.prediction.predictionservice.model.entity.PredictionAggregation;
 import com.github.skrip.prediction.predictionservice.model.entity.TelemetryAggregation;
 import com.github.skrip.prediction.predictionservice.model.enums.PredictionSource;
-
-import java.time.Instant;
-import java.util.List;
 
 import static com.github.skrip.prediction.predictionservice.utils.TimeUtils.convertToInstant;
 import static com.github.skrip.prediction.predictionservice.utils.TimeUtils.convertToTimestamp;
@@ -28,12 +26,12 @@ public class PredictionMapper {
         return prediction.build();
     }
 
-    public static PredictionRequest toPredictionResponse(Long deviceId, Instant windowStart, Instant windowEnd, List<TelemetryAggregation> predictions) {
+    public static PredictionRequest toPredictionRequest(DevicePredictionAggregation predictionAggregation) {
         return PredictionRequest.newBuilder()
-                .setDeviceId(deviceId)
-                .setWindowStart(convertToTimestamp(windowStart))
-                .setWindowEnd(convertToTimestamp(windowEnd))
-                .addAllSensors(predictions.stream()
+                .setDeviceId(predictionAggregation.getDeviceId())
+                .setWindowStart(convertToTimestamp(predictionAggregation.getWindowStart()))
+                .setWindowEnd(convertToTimestamp(predictionAggregation.getWindowEnd()))
+                .addAllSensors(predictionAggregation.getPredictions().stream()
                         .map(PredictionMapper::toSensorAggregation)
                         .toList())
                 .build();
