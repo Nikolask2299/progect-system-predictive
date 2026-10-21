@@ -1,5 +1,6 @@
 package com.github.skrip.prediction.predictionservice.model.entity;
 
+import com.github.skrip.prediction.predictionservice.model.dto.TelemetryAggregationDto;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -30,4 +31,19 @@ public class TelemetryAggregation {
         Integer sensorId,
         Instant timestamp
     ){}
+
+    public static TelemetryAggregation toEntity(TelemetryAggregationDto telemetryAggregationDto) {
+        if (telemetryAggregationDto != null) {
+            return new TelemetryAggregation(
+                    new TelemetryID(telemetryAggregationDto.id().sensorId(), telemetryAggregationDto.id().timestamp()),
+                    telemetryAggregationDto.count(),
+                    telemetryAggregationDto.sum(),
+                    telemetryAggregationDto.mean(),
+                    telemetryAggregationDto.max(),
+                    telemetryAggregationDto.min(),
+                    telemetryAggregationDto.stdDev()
+            );
+        }
+        return null;
+    }
 }

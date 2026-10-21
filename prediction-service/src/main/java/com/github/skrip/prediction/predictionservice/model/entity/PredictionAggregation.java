@@ -1,6 +1,7 @@
 package com.github.skrip.prediction.predictionservice.model.entity;
 
 
+import com.github.skrip.prediction.predictionservice.model.dto.PredictionAggregationDto;
 import com.github.skrip.prediction.predictionservice.model.enums.PredictionSource;
 import jakarta.persistence.*;
 import lombok.*;
@@ -32,4 +33,17 @@ public class PredictionAggregation {
     private Instant calculate_at;
 
     private String maintenance_recommendation;
+
+    public PredictionAggregationDto aggregationDto() {
+        return new PredictionAggregationDto(
+                id,
+                device_id,
+                rul_hours,
+                confidence,
+                risk_score,
+                source,
+                calculate_at,
+                maintenance_recommendation
+        );
+    }
 }

@@ -27,6 +27,13 @@ management:
         include: "*"
 
 app:
+  circuit:
+    failure-threshold: 5
+    reset-timeout: 60
+  cache:
+    cache-name: predictionsCache
+    maximumSize: 100
+    expireAfterAccess: 1000
   pdm.ml:
     timeout-ms: 1500
     max-attempts: 3

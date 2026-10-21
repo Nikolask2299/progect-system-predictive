@@ -5,8 +5,11 @@ import com.github.skrip.prediction.predictionservice.grpc.PredictionRequest;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionResponse;
 import com.github.skrip.prediction.predictionservice.model.entity.DevicePredictionAggregation;
 import com.github.skrip.prediction.predictionservice.model.entity.PredictionAggregation;
+import com.github.skrip.prediction.predictionservice.service.CircuitBreaker;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -22,6 +25,8 @@ import static com.github.skrip.prediction.predictionservice.utils.PredictionMapp
 @Slf4j
 public class PredictionClient {
 
+    private final CircuitBreaker circuitBreaker;
+
     @Value("${app.pdm.ml.timeout-ms}")
     private long timeoutMs;
 
@@ -30,7 +35,8 @@ public class PredictionClient {
 
     PredictionServiceBlockingStub predictionServiceBlockingStub;
 
-    public PredictionClient(PredictionServiceBlockingStub predictionServiceBlockingStub) {
+    public PredictionClient(CircuitBreaker circuitBreaker, PredictionServiceBlockingStub predictionServiceBlockingStub) {
+        this.circuitBreaker = circuitBreaker;
         this.predictionServiceBlockingStub = predictionServiceBlockingStub;
     }
 
@@ -39,32 +45,35 @@ public class PredictionClient {
                 .withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS);
         PredictionRequest request = toPredictionRequest(predictionAggregation);
         try {
-            return toPredictionAggregation(blockingStub.getPrediction(request));
+            var res = toPredictionAggregation(blockingStub.getPrediction(request));
+            circuitBreaker.recordSuccess();
+            return res;
         } catch (StatusRuntimeException e) {
             var code = e.getStatus().getCode();
+            circuitBreaker.recordFailure();
             return switch (code) {
                 case DEADLINE_EXCEEDED -> {
-                    log.warn("Deadline exceeded for request: {}", request.toString(), e);
+                    log.warn("Deadline exceeded for request: {}", request, e);
                     yield toPredictionAggregation(getPredictionWithRetry(request));
                 }
                 case INTERNAL -> {
-                    log.error("Internal error for request: {}", request.toString(), e);
+                    log.error("Internal error for request: {}", request, e);
                     throw new PredictionErrorRequest(e.getMessage());
                 }
                 case UNAVAILABLE -> {
-                    log.error("Service unavailable for request: {}", request.toString(), e);
+                    log.error("Service unavailable for request: {}", request, e);
                     yield toPredictionAggregation(getPredictionWithRetry(request));
                 }
                 case INVALID_ARGUMENT -> {
-                    log.error("Invalid argument for request: {}", request.toString(), e);
+                    log.error("Invalid argument for request: {}", request, e);
                     throw new PredictionErrorRequest(e.getMessage());
                 }
                 case CANCELLED -> {
-                    log.warn("Request cancelled for request: {}", request.toString(), e);
+                    log.warn("Request cancelled for request: {}", request, e);
                     throw new PredictionErrorRequest(e.getMessage());
                 }
                 default -> {
-                    log.error("Unexpected error for request: {} with code {}", request.toString(), code, e);
+                    log.error("Unexpected error for request: {} with code {}", request, code, e);
                     throw new PredictionErrorRequest(e.getMessage());
                 }
             };
@@ -78,10 +87,12 @@ public class PredictionClient {
         StatusRuntimeException lastException = null;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                return blockingStub.getPrediction(request);
+                var response = blockingStub.getPrediction(request);
+                circuitBreaker.recordSuccess();
+                return response;
             } catch (StatusRuntimeException e) {
                 lastException = e;
-
+                circuitBreaker.recordFailure();
                 if (!isRetryCode(e.getStatus().getCode())) throw e;
 
                 log.warn("Retried attempt {}:{} failed {} from request {}",

@@ -18,7 +18,7 @@ public class TelemetryAggregationConsumer {
     @KafkaListener(topics = "${app.kafka.topic-aggregation}", groupId = "${app.kafka.group-id}")
     public void listenTelemetryAggregation(TelemetryAggregationDto telemetryAggregationDto, Acknowledgment acknowledgment) {
         log.info("Received telemetry aggregation message.");
-        predictionService.processMessage(telemetryAggregationDto);
+        predictionService.processMessageTelemetryDto(telemetryAggregationDto);
         acknowledgment.acknowledge();
     }
 }

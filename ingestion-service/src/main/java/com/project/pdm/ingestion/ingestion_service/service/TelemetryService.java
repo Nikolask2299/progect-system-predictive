@@ -109,13 +109,12 @@ public class TelemetryService {
             min.accumulate(value);
         }
 
-        public double getMeanAggregation() {
-            if (counter.get() == 0) return 0;
+        public void getMeanAggregation() {
+            if (counter.get() == 0) return;
             this.mean.set(summa.sum() / counter.get());
-            return mean.get();
         }
 
-        public Double calculateStandardDeviation(BlockingQueue<TelemetryRecord> telemetryRecords) throws Exception {
+        public void calculateStandardDeviation(BlockingQueue<TelemetryRecord> telemetryRecords) throws Exception {
             getMeanAggregation();
             double mean = this.mean.get();
             DoubleAdder summSquareDiff = new DoubleAdder();
@@ -125,7 +124,6 @@ public class TelemetryService {
                     .forEach(val -> summSquareDiff.add(Math.pow((val - mean), 2.0)));
 
             this.stdDev.set(Math.sqrt(summSquareDiff.sum() / (telemetryRecords.size() - 1)));
-            return stdDev.get();
         }
 
         public TelemetryAggregation toEntityAggregation(Integer sensorID) {

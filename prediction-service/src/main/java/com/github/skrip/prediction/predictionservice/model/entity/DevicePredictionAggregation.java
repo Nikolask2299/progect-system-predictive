@@ -1,15 +1,15 @@
 package com.github.skrip.prediction.predictionservice.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.time.Instant;
 import java.util.List;
 
 @Data
 @AllArgsConstructor
-@Builder
+@NoArgsConstructor
+@Getter
+@Setter
 public class DevicePredictionAggregation {
     private Long deviceId;
     private Instant windowStart;
