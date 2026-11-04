@@ -17,9 +17,9 @@ import java.time.LocalDateTime;
 @Table(name = "prediction_aggregation")
 public class PredictionAggregation {
     @Id
-    private Long id;
+    private Integer id;
 
-    private Long device_id;
+    private Integer device_id;
 
     private Double rul_hours;
 

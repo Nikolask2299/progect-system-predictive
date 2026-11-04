@@ -1,11 +1,9 @@
 import logging
-import os
-from concurrent import futures
 import signal
+import sys
+from concurrent import futures
 
-import sys; print(sys.path)
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'generated'))
+print(sys.path)
 
 import grpc
 

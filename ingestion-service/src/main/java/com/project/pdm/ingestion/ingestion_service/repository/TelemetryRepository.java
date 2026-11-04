@@ -8,13 +8,8 @@ import java.time.Instant;
 import java.util.List;
 
 public interface TelemetryRepository extends JpaRepository<TelemetryRecord, TelemetryRecord.TelemetryID>{
-
    //boolean existsBySensorId(Integer sensorId);
-
    //boolean existBySensorIdAndTimestamp(TelemetryRecord.TelemetryID id);
-
    //List<TelemetryRecord> findBySensorIdAndTimestampAfter(Integer sensorId, Instant timestamp);
-
   // List<TelemetryRecord> findTopBySensorIdOrderByTimestampDesc(Integer sensorId);
-
 }

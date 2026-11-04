@@ -3,15 +3,20 @@ package com.github.skrip.prediction.predictionservice.grpc.client;
 import com.github.skrip.prediction.predictionservice.exception.PredictionErrorRequest;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionRequest;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionResponse;
+import com.github.skrip.prediction.predictionservice.grpc.PredictionServiceGrpc;
 import com.github.skrip.prediction.predictionservice.model.entity.DevicePredictionAggregation;
 import com.github.skrip.prediction.predictionservice.model.entity.PredictionAggregation;
 import com.github.skrip.prediction.predictionservice.service.CircuitBreaker;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.annotations.GrpcGenerated;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.grpc.client.ImportGrpcClients;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -23,6 +28,7 @@ import static com.github.skrip.prediction.predictionservice.utils.PredictionMapp
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class PredictionClient {
 
     private final CircuitBreaker circuitBreaker;
@@ -33,21 +39,16 @@ public class PredictionClient {
     @Value("${app.pdm.ml.max-attempts}")
     private int maxAttempts;
 
-    PredictionServiceBlockingStub predictionServiceBlockingStub;
+    private final PredictionServiceBlockingStub predictionServiceBlockingStub;
 
-    public PredictionClient(CircuitBreaker circuitBreaker, PredictionServiceBlockingStub predictionServiceBlockingStub) {
-        this.circuitBreaker = circuitBreaker;
-        this.predictionServiceBlockingStub = predictionServiceBlockingStub;
-    }
-
-    public PredictionAggregation getPrediction(DevicePredictionAggregation predictionAggregation) {
+    public PredictionAggregation getPrediction(DevicePredictionAggregation predictionAggregation) throws PredictionErrorRequest {
         PredictionServiceBlockingStub blockingStub = predictionServiceBlockingStub
                 .withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS);
         PredictionRequest request = toPredictionRequest(predictionAggregation);
         try {
-            var res = toPredictionAggregation(blockingStub.getPrediction(request));
+            var res = blockingStub.getPrediction(request);
             circuitBreaker.recordSuccess();
-            return res;
+            return toPredictionAggregation(res);
         } catch (StatusRuntimeException e) {
             var code = e.getStatus().getCode();
             circuitBreaker.recordFailure();
@@ -81,12 +82,11 @@ public class PredictionClient {
     }
 
     public PredictionResponse getPredictionWithRetry(PredictionRequest request) {
-        PredictionServiceBlockingStub blockingStub = predictionServiceBlockingStub
-                .withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS);
-
         StatusRuntimeException lastException = null;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
+                PredictionServiceBlockingStub blockingStub = predictionServiceBlockingStub
+                    .withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS);
                 var response = blockingStub.getPrediction(request);
                 circuitBreaker.recordSuccess();
                 return response;
@@ -100,7 +100,7 @@ public class PredictionClient {
 
                 if (attempt < maxAttempts) {
                     try {
-                        Thread.sleep((long) 1000 * attempt);
+                        Thread.sleep((long) 10000 * attempt);
                     } catch (InterruptedException ex) {
                         Thread.currentThread().interrupt();
                         throw new RuntimeException(e);

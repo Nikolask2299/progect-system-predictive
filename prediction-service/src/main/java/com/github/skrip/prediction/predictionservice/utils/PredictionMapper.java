@@ -15,7 +15,7 @@ public class PredictionMapper {
 
     public static PredictionAggregation toPredictionAggregation(PredictionResponse response) {
         var prediction = PredictionAggregation.builder()
-                .device_id(response.getDeviceId())
+                .device_id((int) response.getDeviceId())
                 .calculate_at(convertToInstant(response.getCalculateAt()))
                 .risk_score(response.getRiskScore())
                 .rul_hours(response.getRulHours())

@@ -14,7 +14,7 @@ spring:
     open-in-view: false
 
   datasource:
-    url: jdbc:postgresql://database-service:5432/PREDICTIONS_SERVICE_DB?reWriteBatchedInserts=true
+    url: ${DB_URL:jdbc:postgresql://database-service:5432/PREDICTIONS_SERVICE_DB?reWriteBatchedInserts=true}
     username: ${DB_USER:ADMIN}
     password: ${DB_PASSWORD:q1w2e3r4t5y6u7i8o9p0}
     driver-class-name: org.postgresql.Driver
@@ -41,8 +41,8 @@ spring:
       value-deserializer : org.springframework.kafka.support.serializer.JacksonJsonDeserializer
       max-pool-records: 1000
       properties:
-        spring.json.trusted.packages: com.project.pdm.ingestion.ingestion_service.model.dto
-        spring.json.value.default.type: com.project.pdm.ingestion.ingestion_service.model.dto.
+        spring.json.trusted.packages: com.github.skrip.prediction.predictionservice.model.dto
+        spring.json.value.default.type: com.github.skrip.prediction.predictionservice.model.dto.TelemetryAggregationDto
         max.partition.fetch.bytes: 1048576
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -54,17 +54,11 @@ spring:
 
   grpc:
     client:
-      channels:
-        local:
-          address: ${LOCAL_SERVICE_HOST:localhost}:${LOCAL_SERVICE_PORT:50050}
-      prediction-service:
-        address: static://${PREDICTION_SERVICE_HOST:localhost}:${PREDICTION_SERVICE_PORT:50050}
-        negotation-type: PLAINTEXT
-        enable-keep-alive: true
-        keep-alive-time: 10s
-        keep-alive-timeout: 5s
-        max-alive-without-calls: true
-
+      channel:
+        prediction-service:
+          target: static://${PREDICTION_SERVICE_HOST:localhost}:${PREDICTION_SERVICE_PORT:50050}
+          default:
+            deadline: 5s
 server:
   port: 8080
   shutdown: graceful

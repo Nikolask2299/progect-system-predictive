@@ -1,8 +1,7 @@
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
 
 import grpc
-from google.protobuf import timestamp_pb2
 
 from generated import PredictionService_pb2_grpc, PredictionService_pb2
 
@@ -21,7 +20,7 @@ class PredictionServiceImpl(PredictionService_pb2_grpc.PredictionServiceServicer
 
         response = PredictionService_pb2.PredictionResponse()
         response.device_id = request.device_id
-        response.calculate_at = timestamp_pb2.Timestamp(seconds = int(datetime.now(timezone.utc).timestamp()))
+        response.calculate_at.FromDatetime(datetime.now(timezone.utc))
         response.rul_hours = 22.2
         response.confidence = 0.50
         response.risk_score = 1.0

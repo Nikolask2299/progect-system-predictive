@@ -14,7 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,10 +39,11 @@ public class PredictionService {
     public void init() {
         jdbcTemplate.query(GET_DEVICE_ID_SQL, (rs, rowNum) ->
                 sensorIdToDeviceIdMap.put(rs.getInt("id"), rs.getInt("device_id")));
+        log.info("Loaded {} sensors from DB", sensorIdToDeviceIdMap.size());
     }
 
     public void processMessageTelemetryDto(TelemetryAggregationDto telemetryAggregationDto) {
-        telemetryAggregationBuffer.computeIfAbsent(sensorIdToDeviceIdMap.get(telemetryAggregationDto.id()),
+        telemetryAggregationBuffer.computeIfAbsent(sensorIdToDeviceIdMap.get(telemetryAggregationDto.id().sensorId()),
                 l -> new ArrayBlockingQueue<>(1000))
                 .offer(TelemetryAggregation.toEntity(telemetryAggregationDto));
     }
@@ -68,11 +71,11 @@ public class PredictionService {
 
     private DevicePredictionAggregation getDevicePredictionAggregation(Integer deviceId, ArrayBlockingQueue<TelemetryAggregation> telemetryAggregation) {
         var devicePredictionAggregation = new DevicePredictionAggregation();
-        devicePredictionAggregation.setDeviceId(Long.valueOf(deviceId));
+        devicePredictionAggregation.setDeviceId(deviceId);
         var prediction = telemetryAggregation.stream().toList();
         devicePredictionAggregation.setPredictions(prediction);
-        devicePredictionAggregation.setWindowStart(prediction.get(0).getId().timestamp());
-        devicePredictionAggregation.setWindowEnd(prediction.get(prediction.size() - 1).getId().timestamp());
+        devicePredictionAggregation.setWindowStart(prediction.getFirst().getId().timestamp());
+        devicePredictionAggregation.setWindowEnd(prediction.getLast().getId().timestamp());
         return devicePredictionAggregation;
     }
 

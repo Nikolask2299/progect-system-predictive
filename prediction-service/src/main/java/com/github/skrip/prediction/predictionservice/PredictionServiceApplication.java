@@ -1,13 +1,12 @@
 package com.github.skrip.prediction.predictionservice;
 
-import com.github.skrip.prediction.predictionservice.grpc.PredictionRequest;
-import com.github.skrip.prediction.predictionservice.grpc.client.PredictionClient;
+import com.github.skrip.prediction.predictionservice.grpc.PredictionServiceGrpc;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.grpc.client.ImportGrpcClients;
 
 @SpringBootApplication
-@ImportGrpcClients(basePackages = "com.github.skrip.prediction.predictionservice.grpc.client")
+@ImportGrpcClients(target = "prediction-service", types = PredictionServiceGrpc.PredictionServiceBlockingStub.class)
 public class PredictionServiceApplication {
 
     public static void main(String[] args) {

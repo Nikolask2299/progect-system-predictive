@@ -5,8 +5,8 @@ import com.github.skrip.prediction.predictionservice.model.enums.PredictionSourc
 import java.time.Instant;
 
 public record PredictionAggregationDto(
-        Long id,
-        Long device_id,
+        Integer id,
+        Integer device_id,
         Double rul_hours,
         Double confidence,
         Double risk_score,

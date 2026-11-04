@@ -11,7 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 public class DevicePredictionAggregation {
-    private Long deviceId;
+    private Integer deviceId;
     private Instant windowStart;
     private Instant windowEnd;
     private List<TelemetryAggregation> predictions;

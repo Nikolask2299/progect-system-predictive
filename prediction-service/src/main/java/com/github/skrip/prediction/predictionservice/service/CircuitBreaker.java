@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class CircuitBreaker {
-    private AtomicInteger failureCount;
+    private final AtomicInteger failureCount = new AtomicInteger(0);
     private State state = State.CLOSED;
     private Instant lastFailureTime;
 
