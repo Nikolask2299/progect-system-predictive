@@ -38,8 +38,8 @@ spring:
       group-id: pdm-telemetry-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer : org.springframework.kafka.support.serializer.JacksonJsonDeserializer
-      max-pool-records: 1000
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      max-poll-records: 1000
       properties:
         spring.json.trusted.packages: com.project.pdm.ingestion.ingestion_service.model.dto
         spring.json.value.default.type: com.project.pdm.ingestion.ingestion_service.model.dto.TelemetryDTO
@@ -50,6 +50,8 @@ spring:
       acks : all
       retries: 3
       properties:
+        spring.json.trusted.packages: com.project.pdm.ingestion.ingestion_service.model.dto
+        spring.json.value.default.type: com.project.pdm.ingestion.ingestion_service.model.dto.AggregationDTO
         spring.json.add.type.headers: false
 
 server:

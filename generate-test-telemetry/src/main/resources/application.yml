@@ -1,6 +1,6 @@
 app:
   topic: telemetry.raw
-  count: 10
+  count: 15
 
 spring:
   kafka:

@@ -1,6 +1,7 @@
 package com.project.pdm.ingestion.ingestion_service.service;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import com.project.pdm.ingestion.ingestion_service.model.dto.AggregationDTO;
 import com.project.pdm.ingestion.ingestion_service.model.dto.TelemetryDTO;
 import com.project.pdm.ingestion.ingestion_service.model.entity.TelemetryAggregation;
 import com.project.pdm.ingestion.ingestion_service.model.entity.TelemetryRecord;
@@ -41,7 +42,7 @@ public class TelemetryService {
     @Value("${app.kafka.topic-aggregation}")
     private String telemetryTopic;
 
-    private final KafkaTemplate<String, TelemetryAggregation> telemetryAggregationKafkaTemplate;
+    private final KafkaTemplate<String, Object> telemetryAggregationKafkaTemplate;
 
     public void saveProcessTelemetry(List<TelemetryDTO> telemetryRecords) {
         telemetryRecords.stream()
@@ -67,17 +68,33 @@ public class TelemetryService {
     @Scheduled(fixedRate = 5000, initialDelay = 10000)
     protected void processBufferTelemetry() {
         log.info("Process Buffer Telemetry Started");
+
         var bufferRecord = telemetryRecordBuffer;
         var bufferMetric = aggregationMetricsBuffer;
+
         this.telemetryRecordBuffer = new ConcurrentHashMap<>();
         this.aggregationMetricsBuffer = new ConcurrentHashMap<>();
+
+        ClassLoader appCl = TelemetryService.class.getClassLoader();
+
         bufferRecord.forEach(4, (key, buffer) -> {
+            Thread t = Thread.currentThread();
+            ClassLoader prevCl = t.getContextClassLoader();
+            t.setContextClassLoader(appCl);
+
             try {
+                if (Objects.isNull(bufferMetric.get(key))) {
+                    return;
+                }
+
                 bufferMetric.get(key).calculateStandardDeviation(buffer);
                 TelemetryAggregation telemetryAggregation = bufferMetric.get(key).toEntityAggregation(key);
+
                 telemetryAggregationRepository.save(telemetryAggregation);
-                telemetryAggregationKafkaTemplate.send(telemetryTopic, telemetryAggregation);
+                telemetryAggregationKafkaTemplate.send(telemetryTopic, String.valueOf(telemetryAggregation.getId().sensorId()), telemetryAggregation.toaggregationDTO());
+
                 log.info("Telemetry SENSOR ID {} aggregation saved: {}", key,telemetryAggregation);
+
                 int[][] batch = jdbcTemplate.batchUpdate(SQL_QUERY, buffer.stream().toList(), buffer.size(),
                         (ps, record) -> {
                             ps.setTimestamp(1, Timestamp.from(record.getId().timestamp()));
@@ -85,9 +102,12 @@ public class TelemetryService {
                             ps.setDouble(3, record.getValue());
                             ps.setString(4, record.getQuality());
                         });
+
                 log.info("Telemetry SENSOR ID {} batch saved count: {}", key, batch[0].length);
             } catch (Exception e) {
                 throw new RuntimeException(e);
+            } finally {
+                t.setContextClassLoader(prevCl);
             }
         });
 

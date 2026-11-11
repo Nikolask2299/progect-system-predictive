@@ -16,7 +16,9 @@ import java.time.LocalDateTime;
 @Builder
 @Table(name = "prediction_aggregation")
 public class PredictionAggregation {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     private Integer device_id;

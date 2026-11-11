@@ -7,6 +7,9 @@ print(sys.path)
 
 import grpc
 
+import py_eureka_client.eureka_client as eureka_client
+import os
+
 from generated import PredictionService_pb2_grpc
 from grpcService.server import PredictionServiceImpl
 
@@ -14,6 +17,12 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def serve():
+    eureka_client.init(
+        eureka_server=os.getenv("EUREKA_SERVER_URL", "http://eureka-server:8761/eureka/"),
+        app_name=os.getenv("EUREKA_APP_NAME", "ml-service"),
+        instance_host=os.getenv("EUREKA_INSTANCE_HOST", "ml-service.pdm.local"),
+        instance_port=int(os.getenv("EUREKA_INSTANCE_PORT", 50050)))
+
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=100),
         options=[

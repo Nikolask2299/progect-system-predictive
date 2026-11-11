@@ -7,6 +7,7 @@ WORKDIR /app
 
 RUN pip install grpcio
 RUN pip install grpcio-tools
+RUN pip install py-eureka-client
 
 COPY . .
 

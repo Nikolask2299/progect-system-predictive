@@ -23,3 +23,13 @@ app:
       topic-aggregation: "telemetry-aggregation.raw"
       topic: "telemetry.raw"
       group-id: "ingest-service-pdm"
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eureka-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:${HOSTNAME}}
+    prefer-ip-address: false

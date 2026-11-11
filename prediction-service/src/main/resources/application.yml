@@ -56,7 +56,7 @@ spring:
     client:
       channel:
         prediction-service:
-          target: static://${PREDICTION_SERVICE_HOST:localhost}:${PREDICTION_SERVICE_PORT:50050}
+          target: static://${PREDICTION_SERVICE_HOST:ml-service.pdm.local}:${PREDICTION_SERVICE_PORT:50050}
           default:
             deadline: 5s
 server:
