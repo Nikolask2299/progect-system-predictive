@@ -22,9 +22,9 @@ message PredictionResponse {
 }
 
 enum PredictionSource {
-  PREDICTION_SOURCE_ACTUAL = 0;
-  PREDICTION_SOURCE_CACHED = 1;
-  PREDICTION_SOURCE_UNSPECIFIED = 3;
+  ACTUAL = 0;
+  CACHED = 1;
+  UNSPECIFIED = 3;
 }
 
 message PredictionRequest {

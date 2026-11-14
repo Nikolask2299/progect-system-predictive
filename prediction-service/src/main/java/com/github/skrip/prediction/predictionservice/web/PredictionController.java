@@ -1,5 +1,6 @@
 package com.github.skrip.prediction.predictionservice.web;
 
+import com.github.skrip.prediction.predictionservice.exception.PredictionErrorRequest;
 import com.github.skrip.prediction.predictionservice.model.dto.PredictionAggregationDto;
 import com.github.skrip.prediction.predictionservice.service.PredictionService;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,7 @@ public class PredictionController {
     private final PredictionService predictionService;
 
     @GetMapping("/{deviceId}")
-    public ResponseEntity<PredictionAggregationDto> getPrediction(@PathVariable Integer deviceId) {
-        return ResponseEntity.ok(predictionService.getPredictionAggregationDeviceId(deviceId).aggregationDto());
+    public ResponseEntity<PredictionAggregationDto> getPrediction(@PathVariable Integer deviceId) throws PredictionErrorRequest {
+        return ResponseEntity.ok(predictionService.getPredictionAggregationDeviceId(deviceId));
     }
 }

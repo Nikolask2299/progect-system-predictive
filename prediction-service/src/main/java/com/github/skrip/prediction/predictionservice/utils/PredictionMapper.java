@@ -15,12 +15,12 @@ public class PredictionMapper {
 
     public static PredictionAggregation toPredictionAggregation(PredictionResponse response) {
         var prediction = PredictionAggregation.builder()
-                .device_id((int) response.getDeviceId())
-                .calculate_at(convertToInstant(response.getCalculateAt()))
-                .risk_score(response.getRiskScore())
-                .rul_hours(response.getRulHours())
+                .deviceId((int) response.getDeviceId())
+                .calculateAt(convertToInstant(response.getCalculateAt()))
+                .riskScore(response.getRiskScore())
+                .rulHours(response.getRulHours())
                 .confidence(response.getConfidence())
-                .maintenance_recommendation(response.getMaintenanceRecommendation())
+                .maintenanceRecommendation(response.getMaintenanceRecommendation())
                 .source(PredictionSource.valueOf(response.getSource().name()));
 
         return prediction.build();

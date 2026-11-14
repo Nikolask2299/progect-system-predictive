@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timezone
+import random
 
 import grpc
 
@@ -21,10 +22,10 @@ class PredictionServiceImpl(PredictionService_pb2_grpc.PredictionServiceServicer
         response = PredictionService_pb2.PredictionResponse()
         response.device_id = request.device_id
         response.calculate_at.FromDatetime(datetime.now(timezone.utc))
-        response.rul_hours = 22.2
+        response.rul_hours = random.random() * 10
         response.confidence = 0.50
         response.risk_score = 1.0
-        response.source = PredictionService_pb2.PredictionSource.PREDICTION_SOURCE_UNSPECIFIED
+        response.source = PredictionService_pb2.PredictionSource.ACTUAL
         response.maintenance_recommendation = "TETS MAINTENANCE"
 
         return response

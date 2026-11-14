@@ -1,6 +1,9 @@
 package com.github.skrip.prediction.predictionservice.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
+import com.github.skrip.prediction.predictionservice.exception.PredictionError;
+import com.github.skrip.prediction.predictionservice.exception.PredictionErrorRequest;
+import com.github.skrip.prediction.predictionservice.model.dto.PredictionAggregationDto;
 import com.github.skrip.prediction.predictionservice.model.dto.TelemetryAggregationDto;
 import com.github.skrip.prediction.predictionservice.grpc.client.PredictionClient;
 import com.github.skrip.prediction.predictionservice.model.entity.DevicePredictionAggregation;
@@ -8,6 +11,7 @@ import com.github.skrip.prediction.predictionservice.model.entity.PredictionAggr
 import com.github.skrip.prediction.predictionservice.model.entity.TelemetryAggregation;
 import com.github.skrip.prediction.predictionservice.model.enums.PredictionSource;
 import com.github.skrip.prediction.predictionservice.repository.PredictionAggregationRepository;
+import com.github.skrip.prediction.predictionservice.repository.TelemetryAggregationRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,9 +19,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,10 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class PredictionService {
     private static final String GET_DEVICE_ID_SQL = "SELECT id, device_id FROM prediction_schema.sensors";
+    private static final String GET_SENSOR_ID_SQL = "SELECT id FROM prediction_schema.sensors WHERE device_id = ?";
 
     private final CircuitBreaker circuitBreaker;
     private final PredictionClient predictionClient;
     private final PredictionAggregationRepository aggregationRepository;
+    private final TelemetryAggregationRepository telemetryAggregationRepository;
     private final Cache<Integer, PredictionAggregation> cache;
     private final ConcurrentHashMap<Integer, ArrayBlockingQueue<TelemetryAggregation>> telemetryAggregationBuffer = new ConcurrentHashMap<>();
     private final HashMap<Integer, Integer> sensorIdToDeviceIdMap = new HashMap<>();
@@ -48,15 +52,22 @@ public class PredictionService {
                 .offer(TelemetryAggregation.toEntity(telemetryAggregationDto));
     }
 
-    public PredictionAggregation getPredictionAggregationDeviceId(Integer deviceId) {
+    public PredictionAggregationDto getPredictionAggregationDeviceId(Integer deviceId) throws PredictionErrorRequest {
 
-        ArrayBlockingQueue<TelemetryAggregation> telemetryAggregationDtos = telemetryAggregationBuffer.get(deviceId);
+        List<TelemetryAggregation> telemetryAggregationDtos = telemetryAggregationBuffer.getOrDefault(deviceId, new ArrayBlockingQueue<>(1)).stream().toList();
 
-        if (telemetryAggregationDtos == null || telemetryAggregationDtos.isEmpty()) {
+        if (!circuitBreaker.allowRequest()) return getCachePredictionAggregationDeviceId(deviceId);
+
+        if (telemetryAggregationDtos.isEmpty()) {
+            List<Integer> sensorIds = jdbcTemplate.queryForList(GET_SENSOR_ID_SQL, Integer.class, deviceId);
+            telemetryAggregationDtos = telemetryAggregationRepository.findById_SensorIdInAndId_TimestampBetween(sensorIds, Instant.now().minusSeconds(60), Instant.now());
+        }
+
+        if (telemetryAggregationDtos.isEmpty()) {
             return getCachePredictionAggregationDeviceId(deviceId);
         }
 
-        if (!circuitBreaker.allowRequest()) return getCachePredictionAggregationDeviceId(deviceId);
+        log.info("Received {} telemetry aggregations for deviceId: {}", telemetryAggregationDtos.size(), deviceId);
 
         var devicePredictionAggregation = getDevicePredictionAggregation(deviceId, telemetryAggregationDtos);
         var predictionAggregation = predictionClient.getPrediction(devicePredictionAggregation);
@@ -64,29 +75,46 @@ public class PredictionService {
             return getCachePredictionAggregationDeviceId(deviceId);
         }
 
+        log.info("Prediction for deviceId: {} is {}", deviceId, predictionAggregation.getCalculateAt());
+        cache.put(deviceId, predictionAggregation);
+
+        var predictionAggregationDto = predictionAggregation.aggregationDto();
+        predictionAggregation.setSource(PredictionSource.DATABASE);
+
         aggregationRepository.save(predictionAggregation);
         telemetryAggregationBuffer.remove(deviceId);
-        return predictionAggregation;
+
+        return predictionAggregationDto;
     }
 
-    private DevicePredictionAggregation getDevicePredictionAggregation(Integer deviceId, ArrayBlockingQueue<TelemetryAggregation> telemetryAggregation) {
+    private DevicePredictionAggregation getDevicePredictionAggregation(Integer deviceId, List<TelemetryAggregation> telemetryAggregation) {
         var devicePredictionAggregation = new DevicePredictionAggregation();
         devicePredictionAggregation.setDeviceId(deviceId);
-        var prediction = telemetryAggregation.stream().toList();
-        devicePredictionAggregation.setPredictions(prediction);
-        devicePredictionAggregation.setWindowStart(prediction.getFirst().getId().timestamp());
-        devicePredictionAggregation.setWindowEnd(prediction.getLast().getId().timestamp());
+        devicePredictionAggregation.setPredictions(telemetryAggregation);
+        devicePredictionAggregation.setWindowStart(telemetryAggregation.getFirst().getId().timestamp());
+        devicePredictionAggregation.setWindowEnd(telemetryAggregation.getLast().getId().timestamp());
         return devicePredictionAggregation;
     }
 
-    private PredictionAggregation getCachePredictionAggregationDeviceId(Integer deviceId) {
+    private PredictionAggregationDto getCachePredictionAggregationDeviceId(Integer deviceId) {
         if (cache.getIfPresent(deviceId) == null) {
-            return new PredictionAggregation();
+            try {
+                var predictionAggregation = aggregationRepository.findFirstByDeviceIdOrderByCalculateAtDesc(deviceId);
+                var predictionAggregationDto = predictionAggregation.orElseThrow();
+                predictionAggregationDto.setSource(PredictionSource.DATABASE);
+                predictionAggregationDto.setConfidence(predictionAggregationDto.getConfidence() * 0.7);
+                log.info("Prediction for deviceId: {} is {}", deviceId, predictionAggregationDto.getCalculateAt());
+                return predictionAggregationDto.aggregationDto();
+            } catch (Exception e) {
+                throw new PredictionError("No predictions not found for deviceId: " + deviceId + " at " + Instant.now() + " UTC");
+            }
         }
+
         PredictionAggregation predictionAggregation = cache.getIfPresent(deviceId);
         Objects.requireNonNull(predictionAggregation).setConfidence(predictionAggregation.getConfidence() * 0.7);
-        predictionAggregation.setSource(PredictionSource.PREDICTION_SOURCE_CACHED);
-        return predictionAggregation;
+        predictionAggregation.setSource(PredictionSource.CACHED);
+        log.info("Prediction for deviceId: {} is {}", deviceId, predictionAggregation.getCalculateAt());
+        return predictionAggregation.aggregationDto();
     }
 }
 

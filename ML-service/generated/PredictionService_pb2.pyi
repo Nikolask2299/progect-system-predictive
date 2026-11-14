@@ -12,12 +12,12 @@ DESCRIPTOR: _descriptor.FileDescriptor
 
 class PredictionSource(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
-    PREDICTION_SOURCE_ACTUAL: _ClassVar[PredictionSource]
-    PREDICTION_SOURCE_CACHED: _ClassVar[PredictionSource]
-    PREDICTION_SOURCE_UNSPECIFIED: _ClassVar[PredictionSource]
-PREDICTION_SOURCE_ACTUAL: PredictionSource
-PREDICTION_SOURCE_CACHED: PredictionSource
-PREDICTION_SOURCE_UNSPECIFIED: PredictionSource
+    ACTUAL: _ClassVar[PredictionSource]
+    CACHED: _ClassVar[PredictionSource]
+    UNSPECIFIED: _ClassVar[PredictionSource]
+ACTUAL: PredictionSource
+CACHED: PredictionSource
+UNSPECIFIED: PredictionSource
 
 class PredictionResponse(_message.Message):
     __slots__ = ("device_id", "calculate_at", "rul_hours", "confidence", "risk_score", "source", "maintenance_recommendation")

@@ -27,7 +27,7 @@ app:
     maximumSize: 100
     expireAfterAccess: 1000
   pdm.ml:
-    timeout-ms: 1500
+    timeout-ms: 2000
     max-attempts: 3
   kafka:
     topic-aggregation: "telemetry-aggregation.raw"

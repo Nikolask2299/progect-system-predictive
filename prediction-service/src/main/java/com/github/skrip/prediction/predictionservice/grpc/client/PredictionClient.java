@@ -3,20 +3,14 @@ package com.github.skrip.prediction.predictionservice.grpc.client;
 import com.github.skrip.prediction.predictionservice.exception.PredictionErrorRequest;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionRequest;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionResponse;
-import com.github.skrip.prediction.predictionservice.grpc.PredictionServiceGrpc;
 import com.github.skrip.prediction.predictionservice.model.entity.DevicePredictionAggregation;
 import com.github.skrip.prediction.predictionservice.model.entity.PredictionAggregation;
 import com.github.skrip.prediction.predictionservice.service.CircuitBreaker;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.grpc.stub.annotations.GrpcGenerated;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.grpc.client.ImportGrpcClients;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -52,10 +46,15 @@ public class PredictionClient {
         } catch (StatusRuntimeException e) {
             var code = e.getStatus().getCode();
             circuitBreaker.recordFailure();
+
             return switch (code) {
                 case DEADLINE_EXCEEDED -> {
                     log.warn("Deadline exceeded for request: {}", request, e);
-                    yield toPredictionAggregation(getPredictionWithRetry(request));
+                    try {
+                        yield toPredictionAggregation(getPredictionWithRetry(request));
+                    } catch (StatusRuntimeException e1) {
+                        yield null;
+                    }
                 }
                 case INTERNAL -> {
                     log.error("Internal error for request: {}", request, e);
@@ -63,7 +62,11 @@ public class PredictionClient {
                 }
                 case UNAVAILABLE -> {
                     log.error("Service unavailable for request: {}", request, e);
-                    yield toPredictionAggregation(getPredictionWithRetry(request));
+                    try {
+                        yield toPredictionAggregation(getPredictionWithRetry(request));
+                    } catch (StatusRuntimeException e1) {
+                        yield null;
+                    }
                 }
                 case INVALID_ARGUMENT -> {
                     log.error("Invalid argument for request: {}", request, e);
@@ -100,7 +103,7 @@ public class PredictionClient {
 
                 if (attempt < maxAttempts) {
                     try {
-                        Thread.sleep((long) 10000 * attempt);
+                        Thread.sleep((long) 1000 * attempt);
                     } catch (InterruptedException ex) {
                         Thread.currentThread().interrupt();
                         throw new RuntimeException(e);

@@ -1,4 +1,4 @@
-CREATE TYPE prediction_source AS ENUM('ACTUAL', 'CACHED', 'UNSPECIFIED');
+CREATE TYPE prediction_source AS ENUM('ACTUAL', 'CACHED', 'UNSPECIFIED', 'DATABASE');
 
 CREATE TABLE IF NOT EXISTS prediction_aggregation(
     id SERIAL PRIMARY KEY,
