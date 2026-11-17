@@ -3,16 +3,8 @@ spring:
     activate:
       on-profile: dev
 
-  datasource:
-    url: jdbc:postgresql://localhost:5432/PREDICTIONS_SERVICE_DB
-    username: ADMIN
-    password: q1w2e3r4t5y6u7i8o9p0
-
-  kafka:
-    bootstrap-servers: localhost:9094
-
 server:
-  port: 9102
+  port: 9103
 
 logging:
   level:
@@ -25,6 +17,16 @@ management:
     web:
       exposure:
         include: "*"
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eureka-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOST:${HOSTNAME}}
+    prefer-ip-address: false
 
 pdm:
   alert:

@@ -2,6 +2,7 @@ package com.github.skrip.prediction.decisionservice.exception;
 
 import com.github.skrip.prediction.decisionservice.model.dto.ErrorResponse;
 import jakarta.persistence.OptimisticLockException;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -14,10 +15,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * Глобальный обработчик исключений для REST API.
  * Возвращает корректные HTTP-коды: 400, 404, 409.
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler({IllegalTransitionException.class, TransitionGuardFailedException.class})
     public ResponseEntity<ErrorResponse> handleTransitionError(RuntimeException ex) {

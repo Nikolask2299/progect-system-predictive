@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.*;
@@ -51,6 +52,7 @@ public class PredictionService {
                 .offer(TelemetryAggregation.toEntity(telemetryAggregationDto));
     }
 
+    @Transactional
     public PredictionAggregationDto getPredictionAggregationDeviceId(Integer deviceId) throws PredictionError {
 
         List<TelemetryAggregation> telemetryAggregationDtos = telemetryAggregationBuffer.getOrDefault(deviceId, new ArrayBlockingQueue<>(1)).stream().toList();
@@ -113,6 +115,7 @@ public class PredictionService {
         PredictionAggregation predictionAggregation = cache.getIfPresent(deviceId);
         Objects.requireNonNull(predictionAggregation).setConfidence(predictionAggregation.getConfidence() * 0.7);
         predictionAggregation.setSource(PredictionSource.CACHED);
+
         log.info("Prediction for deviceId: {} is {}", deviceId, predictionAggregation.getCalculateAt());
         return predictionAggregation.aggregationDto();
     }

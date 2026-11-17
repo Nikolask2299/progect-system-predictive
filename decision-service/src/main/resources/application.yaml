@@ -49,6 +49,8 @@ spring:
       retries: 3
       properties:
         spring.json.add.type.headers: false
+        spring.json.trusted.packages: com.github.skrip.prediction.predictionservice.model.dto
+        spring.json.value.default.type: com.github.skrip.prediction.predictionservice.model.event.AlertCreatedEvent
 
 pdm:
   alert:

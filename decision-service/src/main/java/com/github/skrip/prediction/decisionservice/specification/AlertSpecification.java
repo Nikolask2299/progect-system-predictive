@@ -1,5 +1,6 @@
 package com.github.skrip.prediction.decisionservice.specification;
 
+import com.github.skrip.prediction.decisionservice.model.entity.Alert;
 import com.github.skrip.prediction.decisionservice.model.enums.AlertSeverity;
 import com.github.skrip.prediction.decisionservice.model.enums.AlertStatus;
 import jakarta.persistence.criteria.Predicate;
@@ -17,7 +18,7 @@ public class AlertSpecification {
 
     private AlertSpecification() {}
 
-    public static Specification<com.github.skrip.prediction.decisionservice.model.entity.Alert> withFilters(
+    public static Specification<Alert> withFilters(
             AlertStatus status,
             Integer deviceId,
             AlertSeverity severity,
@@ -37,10 +38,10 @@ public class AlertSpecification {
                 predicates.add(cb.equal(root.get("severity"), severity));
             }
             if (fromDate != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("timestamp"), fromDate));
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), fromDate));
             }
             if (toDate != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("timestamp"), toDate));
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), toDate));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

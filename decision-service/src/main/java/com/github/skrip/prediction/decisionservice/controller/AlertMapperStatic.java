@@ -1,6 +1,7 @@
 package com.github.skrip.prediction.decisionservice.controller;
 
 import com.github.skrip.prediction.decisionservice.model.dto.AlertDTO;
+import com.github.skrip.prediction.decisionservice.model.entity.Alert;
 
 /**
  * Статический маппер для Alert → AlertDTO.
@@ -10,7 +11,7 @@ final class AlertMapperStatic {
 
     private AlertMapperStatic() {}
 
-    static AlertDTO toDTO(com.github.skrip.prediction.decisionservice.model.entity.Alert alert) {
+    static AlertDTO toDTO(Alert alert) {
         return new AlertDTO(
             alert.getId(),
             alert.getDeviceId(),
@@ -20,6 +21,7 @@ final class AlertMapperStatic {
             alert.getEventType(),
             alert.getMessage(),
             alert.getOccurrenceCount(),
+            alert.getCreatedAt(),
             alert.getLastTriggeredAt(),
             alert.getAssignedUserId()
         );
