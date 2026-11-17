@@ -15,9 +15,8 @@ import java.util.Optional;
 
 public interface AlertRepository extends JpaRepository<Alert, Long>, JpaSpecificationExecutor<Alert> {
 
-
     Optional<Alert> findByDeviceIdAndEventTypeAndStatusIn(Integer deviceId, EventType eventType, Collection<AlertStatus> status);
 
-    @Query("SELECT a FROM Alert a WHERE a.status = 'NEW' AND a.timestamp < :cutoff")
+    @Query("SELECT a FROM Alert a WHERE a.status = 'NEW' AND a.createdAt < :cutoff")
     List<Alert> findExpiredNewAlerts(@Param("cutoff") Instant cutoff);
 }

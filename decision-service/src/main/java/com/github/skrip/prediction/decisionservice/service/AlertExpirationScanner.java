@@ -53,7 +53,7 @@ public class AlertExpirationScanner {
             try {
                 alertService.transition(alert.getId(), AlertEvent.TIMEOUT, null);
                 log.info("Алерт {} переведён в EXPIRED (просрочен с {})",
-                    alert.getId(), alert.getTimestamp());
+                    alert.getId(), alert.getCreatedAt());
             } catch (Exception e) {
                 // Переход NEW → EXPIRED защищён автоматом (нелегальный переход не сработает)
                 // Это защищает от дублирования при повторных запусках сканера

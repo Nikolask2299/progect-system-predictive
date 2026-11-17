@@ -2,7 +2,6 @@ package com.github.skrip.prediction.predictionservice.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.skrip.prediction.predictionservice.exception.PredictionError;
-import com.github.skrip.prediction.predictionservice.exception.PredictionErrorRequest;
 import com.github.skrip.prediction.predictionservice.model.dto.PredictionAggregationDto;
 import com.github.skrip.prediction.predictionservice.model.dto.TelemetryAggregationDto;
 import com.github.skrip.prediction.predictionservice.grpc.client.PredictionClient;
@@ -52,7 +51,7 @@ public class PredictionService {
                 .offer(TelemetryAggregation.toEntity(telemetryAggregationDto));
     }
 
-    public PredictionAggregationDto getPredictionAggregationDeviceId(Integer deviceId) throws PredictionErrorRequest {
+    public PredictionAggregationDto getPredictionAggregationDeviceId(Integer deviceId) throws PredictionError {
 
         List<TelemetryAggregation> telemetryAggregationDtos = telemetryAggregationBuffer.getOrDefault(deviceId, new ArrayBlockingQueue<>(1)).stream().toList();
 
@@ -96,13 +95,14 @@ public class PredictionService {
         return devicePredictionAggregation;
     }
 
-    private PredictionAggregationDto getCachePredictionAggregationDeviceId(Integer deviceId) {
+    private PredictionAggregationDto getCachePredictionAggregationDeviceId(Integer deviceId) throws PredictionError {
         if (cache.getIfPresent(deviceId) == null) {
             try {
                 var predictionAggregation = aggregationRepository.findFirstByDeviceIdOrderByCalculateAtDesc(deviceId);
                 var predictionAggregationDto = predictionAggregation.orElseThrow();
                 predictionAggregationDto.setSource(PredictionSource.DATABASE);
                 predictionAggregationDto.setConfidence(predictionAggregationDto.getConfidence() * 0.7);
+
                 log.info("Prediction for deviceId: {} is {}", deviceId, predictionAggregationDto.getCalculateAt());
                 return predictionAggregationDto.aggregationDto();
             } catch (Exception e) {

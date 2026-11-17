@@ -7,10 +7,10 @@ import com.github.skrip.prediction.decisionservice.model.enums.AlertStatus;
 import com.github.skrip.prediction.decisionservice.model.enums.EventType;
 import com.github.skrip.prediction.decisionservice.model.event.AlertCreatedEvent;
 import com.github.skrip.prediction.decisionservice.model.repository.AlertRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.orm.jpa.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -20,96 +20,75 @@ import java.time.Instant;
 import java.util.List;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class DecisionService {
-
-    private static final Logger log = LoggerFactory.getLogger(DecisionService.class);
+    private static final List<AlertStatus> activeStatuses = List.of(AlertStatus.NEW, AlertStatus.ACKNOWLEDGED);
 
     private final AlertProperties alertProperties;
     private final AlertRepository alertRepository;
     private final AlertMetrics alertMetrics;
     private final KafkaTemplate<String, AlertCreatedEvent> alertKafkaTemplate;
 
-    public DecisionService(AlertProperties alertProperties,
-                           AlertRepository alertRepository,
-                           AlertMetrics alertMetrics,
-                           KafkaTemplate<String, AlertCreatedEvent> alertKafkaTemplate) {
-        this.alertProperties = alertProperties;
-        this.alertRepository = alertRepository;
-        this.alertMetrics = alertMetrics;
-        this.alertKafkaTemplate = alertKafkaTemplate;
-    }
-
     @Transactional
-    public void evaluateRisk(Integer deviceId, Double value, String eventType) {
+    public void evaluateRisk(Integer deviceId, Double value, EventType eventType) {
         if (value > alertProperties.getThresholdCritical()) {
             AlertSeverity severity = determineSeverity(value);
-            String message = String.format("Превышен порог! value=%.1f, threshold=%.1f",
+            String message = String.format("The threshold has been exceeded! value=%.1f, threshold=%.1f",
                 value, alertProperties.getThresholdCritical());
             findOrCreateAlert(deviceId, eventType, severity, message);
             return;
         }
-        log.debug("Значение {} не превышает порог {} для устройства {}",
+
+        log.debug("Value {} is below critical threshold {} for device {}",
             value, alertProperties.getThresholdCritical(), deviceId);
     }
 
 
     @Transactional
-    public Alert findOrCreateAlert(Integer deviceId, String eventType,
-                                   AlertSeverity severity, String message) {
-        List<AlertStatus> activeStatuses = List.of(AlertStatus.NEW, AlertStatus.ACKNOWLEDGED);
+    public void findOrCreateAlert(Integer deviceId, EventType eventType, AlertSeverity severity, String message) {
 
-        var active = alertRepository.findByDeviceIdAndEventTypeAndStatusIn(
-            deviceId, eventType, activeStatuses);
+        var active = alertRepository.findByDeviceIdAndEventTypeAndStatusIn(deviceId, eventType, activeStatuses);
 
         if (active.isPresent()) {
-            // 2. Обновить счётчик существующего алерта
             Alert alert = active.get();
             alert.setOccurrenceCount(alert.getOccurrenceCount() + 1);
             alert.setLastTriggeredAt(Instant.now());
             alert = alertRepository.save(alert);
+
             alertMetrics.recordDeduplicated();
-            log.info("Обновлён существующий алерт id={} для устройства {} (счётчик: {})",
+            log.info("Updated existing alert id={} for device {} (occurrence count: {})",
                 alert.getId(), deviceId, alert.getOccurrenceCount());
-            return alert;
+            return;
         }
 
-        // 3. Создать новый алерт
         try {
-            return createNewAlert(deviceId, eventType, severity, message);
+            createNewAlert(deviceId, eventType, severity, message);
         } catch (DataIntegrityViolationException e) {
-            // 4. Гонка: другой поток уже создал алерт → повторить поиск
-            log.warn("Гонка при создании алерта для устройства {}, eventType={}. Повторный поиск.",
-                deviceId, eventType);
-            return retryFindAndUpdate(deviceId, eventType, severity, message, 3);
+            log.warn("Race condition detected for device {} and event type {}. Retrying...", deviceId, eventType);
+            retryFindAndUpdate(deviceId, eventType, severity, message, 3);
         }
     }
 
-    private Alert createNewAlert(Integer deviceId, String eventType,
-                                 AlertSeverity severity, String message) {
+    private void createNewAlert(Integer deviceId, EventType eventType, AlertSeverity severity, String message) {
         Alert alert = Alert.builder()
             .deviceId(deviceId)
             .status(AlertStatus.NEW)
             .severity(severity)
-            .eventType(EventType.valueOf(eventType))
+            .eventType(eventType)
             .message(message)
-            .timestamp(Instant.now())
+            .createdAt(Instant.now())
             .lastTriggeredAt(Instant.now())
             .occurrenceCount(1)
-            .assignedUserId(null) // Заглушка: назначение инженера — Этап 6+
-            .relearningFlag(false)
+            .assignedUserId(null)
             .build();
 
         alert = alertRepository.save(alert);
 
-        log.info("Создан новый алерт id={} для устройства {} severity={}",
-            alert.getId(), deviceId, severity);
+        log.info("Created new alert id={} for device {} with severity {}", alert.getId(), deviceId, severity);
 
-        // Публикация события ТОЛЬКО при создании нового алерта (не при дедупликации)
         publishEventAfterCommit(alert);
-
         alertMetrics.recordCreated();
-
-        return alert;
     }
 
     private void publishEventAfterCommit(Alert alert) {
@@ -118,7 +97,7 @@ public class DecisionService {
             alert.getDeviceId(),
             alert.getSeverity(),
             alert.getEventType(),
-            alert.getTimestamp(),
+            alert.getCreatedAt(),
             alert.getMessage()
         );
 
@@ -126,21 +105,15 @@ public class DecisionService {
             @Override
             public void afterCommit() {
                 alertKafkaTemplate.send("alerts.critical", event);
-                log.info("Событие опубликовано в Kafka: alertId={}, deviceId={}",
+                log.info("Event sent to Kafka: alertId={}, deviceId={}",
                     event.alertId(), event.deviceId());
             }
         });
     }
 
-    /**
-     * Ретрайт при гонке: повторяет поиск и обновление до maxRetries раз.
-     */
-    private Alert retryFindAndUpdate(Integer deviceId, String eventType,
-                                     AlertSeverity severity, String message, int maxRetries) {
+    private void retryFindAndUpdate(Integer deviceId, EventType eventType, AlertSeverity severity, String message, int maxRetries) {
         for (int i = 0; i < maxRetries; i++) {
-            List<AlertStatus> activeStatuses = List.of(AlertStatus.NEW, AlertStatus.ACKNOWLEDGED);
-            var existing = alertRepository.findByDeviceIdAndEventTypeAndStatusIn(
-                deviceId, eventType, activeStatuses);
+            var existing = alertRepository.findByDeviceIdAndEventTypeAndStatusIn(deviceId, eventType, activeStatuses);
 
             if (existing.isPresent()) {
                 Alert alert = existing.get();
@@ -148,25 +121,22 @@ public class DecisionService {
                 alert.setLastTriggeredAt(Instant.now());
                 alert = alertRepository.save(alert);
                 alertMetrics.recordDeduplicated();
-                log.info("После ретрайта обновлён алерт id={} (счётчик: {})",
+                log.info("Updated filed existing alert id={} (count: {})",
                     alert.getId(), alert.getOccurrenceCount());
-                return alert;
+                return;
             }
 
-            // Повторная попытка создания
             try {
-                return createNewAlert(deviceId, eventType, severity, message);
+                createNewAlert(deviceId, eventType, severity, message);
+                return;
             } catch (DataIntegrityViolationException e) {
-                log.debug("Ретрайт {} из {}: гонка продолжается", i + 1, maxRetries);
+                log.debug("Retry {} failed maxRetries={}", i + 1, maxRetries);
             }
         }
 
-        throw new RuntimeException("Не удалось создать алерт после " + maxRetries + " попыток ретрайта");
+        throw new RuntimeException("No alert created after max retries: " + maxRetries);
     }
 
-    /**
-     * Определяет уровень серьёзности на основе значения.
-     */
     private AlertSeverity determineSeverity(Double value) {
         if (value > alertProperties.getThresholdCritical() * 1.5) {
             return AlertSeverity.CRITICAL;

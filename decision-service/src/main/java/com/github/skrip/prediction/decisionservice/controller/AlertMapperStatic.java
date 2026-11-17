@@ -20,7 +20,6 @@ final class AlertMapperStatic {
             alert.getEventType(),
             alert.getMessage(),
             alert.getOccurrenceCount(),
-            alert.getTimestamp(),
             alert.getLastTriggeredAt(),
             alert.getAssignedUserId()
         );

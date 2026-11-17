@@ -1,3 +1,5 @@
 package com.github.skrip.prediction.decisionservice.model.dto;
 
-public record ErrorResponse(String message) {}
+import org.springframework.http.HttpStatus;
+
+public record ErrorResponse(HttpStatus status, String message) {}

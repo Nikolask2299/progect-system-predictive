@@ -4,6 +4,7 @@ import com.github.skrip.prediction.decisionservice.model.dto.AlertDTO;
 import com.github.skrip.prediction.decisionservice.model.enums.AlertEvent;
 import com.github.skrip.prediction.decisionservice.model.enums.AlertSeverity;
 import com.github.skrip.prediction.decisionservice.model.enums.AlertStatus;
+import com.github.skrip.prediction.decisionservice.model.enums.EventType;
 import com.github.skrip.prediction.decisionservice.model.repository.AlertRepository;
 import com.github.skrip.prediction.decisionservice.service.AlertService;
 import com.github.skrip.prediction.decisionservice.service.DecisionService;
@@ -86,7 +87,7 @@ public class AlertController {
 
     @PostMapping("/telemetry")
     public ResponseEntity<Void> handleTelemetry(@RequestBody TelemetryRecord record) {
-        decisionService.evaluateRisk(record.deviceId(), record.value(), "THRESHOLD_EXCEEDED");
+        decisionService.evaluateRisk(record.deviceId(), record.value(), EventType.THRESHOLD_EXCEEDED);
         return ResponseEntity.ok().build();
     }
 

@@ -14,13 +14,11 @@ public record AlertDetailsDTO(
     String eventType,
     String message,
     Integer occurrenceCount,
-    Instant timestamp,
+    Instant createAt,
     Instant lastTriggeredAt,
     Instant acknowledgedAt,
     Instant resolvedAt,
-    Instant expiredAt,
     Long assignedUserId,
-    Boolean relearningFlag,
     List<HistoryEntry> history
 ) {
     public record HistoryEntry(
@@ -56,13 +54,11 @@ public record AlertDetailsDTO(
             alert.getEventType().name(),
             alert.getMessage(),
             alert.getOccurrenceCount(),
-            alert.getTimestamp(),
+            alert.getCreatedAt(),
             alert.getLastTriggeredAt(),
             alert.getAcknowledgedAt(),
             alert.getResolvedAt(),
-            alert.getExpiredAt(),
             alert.getAssignedUserId(),
-            alert.getRelearningFlag(),
             historyEntries
         );
     }

@@ -21,7 +21,7 @@ public final class AlertMapper {
             alert.getEventType(),
             alert.getMessage(),
             alert.getOccurrenceCount(),
-            alert.getTimestamp(),
+            alert.getCreatedAt(),
             alert.getLastTriggeredAt(),
             alert.getAssignedUserId()
         );

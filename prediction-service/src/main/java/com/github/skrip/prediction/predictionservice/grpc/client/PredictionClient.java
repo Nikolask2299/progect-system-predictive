@@ -1,6 +1,6 @@
 package com.github.skrip.prediction.predictionservice.grpc.client;
 
-import com.github.skrip.prediction.predictionservice.exception.PredictionErrorRequest;
+import com.github.skrip.prediction.predictionservice.exception.PredictionError;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionRequest;
 import com.github.skrip.prediction.predictionservice.grpc.PredictionResponse;
 import com.github.skrip.prediction.predictionservice.model.entity.DevicePredictionAggregation;
@@ -35,7 +35,7 @@ public class PredictionClient {
 
     private final PredictionServiceBlockingStub predictionServiceBlockingStub;
 
-    public PredictionAggregation getPrediction(DevicePredictionAggregation predictionAggregation) throws PredictionErrorRequest {
+    public PredictionAggregation getPrediction(DevicePredictionAggregation predictionAggregation) throws PredictionError {
         PredictionServiceBlockingStub blockingStub = predictionServiceBlockingStub
                 .withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS);
         PredictionRequest request = toPredictionRequest(predictionAggregation);
@@ -58,7 +58,7 @@ public class PredictionClient {
                 }
                 case INTERNAL -> {
                     log.error("Internal error for request: {}", request, e);
-                    throw new PredictionErrorRequest(e.getMessage());
+                    throw new PredictionError(e.getMessage());
                 }
                 case UNAVAILABLE -> {
                     log.error("Service unavailable for request: {}", request, e);
@@ -70,15 +70,15 @@ public class PredictionClient {
                 }
                 case INVALID_ARGUMENT -> {
                     log.error("Invalid argument for request: {}", request, e);
-                    throw new PredictionErrorRequest(e.getMessage());
+                    throw new PredictionError(e.getMessage());
                 }
                 case CANCELLED -> {
                     log.warn("Request cancelled for request: {}", request, e);
-                    throw new PredictionErrorRequest(e.getMessage());
+                    throw new PredictionError(e.getMessage());
                 }
                 default -> {
                     log.error("Unexpected error for request: {} with code {}", request, code, e);
-                    throw new PredictionErrorRequest(e.getMessage());
+                    throw new PredictionError(e.getMessage());
                 }
             };
         }
