@@ -1,6 +1,7 @@
 package com.github.skrip.prediction.predictionservice.model.entity;
 
 
+import com.github.skrip.prediction.predictionservice.model.dto.DeviceDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -34,4 +35,14 @@ public class Device {
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "device_id")
     private List<PredictionAggregation> predictionAggregations;
+
+    public DeviceDto toDto() {
+        return new DeviceDto(
+                    id,
+                    name,
+                    type,
+                    locationId,
+                    installDate
+        );
+    }
 }

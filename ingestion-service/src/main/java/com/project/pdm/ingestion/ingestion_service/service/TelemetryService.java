@@ -1,7 +1,6 @@
 package com.project.pdm.ingestion.ingestion_service.service;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import com.project.pdm.ingestion.ingestion_service.model.dto.AggregationDTO;
 import com.project.pdm.ingestion.ingestion_service.model.dto.TelemetryDTO;
 import com.project.pdm.ingestion.ingestion_service.model.entity.TelemetryAggregation;
 import com.project.pdm.ingestion.ingestion_service.model.entity.TelemetryRecord;
@@ -77,7 +76,7 @@ public class TelemetryService {
 
         ClassLoader appCl = TelemetryService.class.getClassLoader();
 
-        bufferRecord.forEach(4, (key, buffer) -> {
+        bufferRecord.forEach(5, (key, buffer) -> {
             Thread t = Thread.currentThread();
             ClassLoader prevCl = t.getContextClassLoader();
             t.setContextClassLoader(appCl);

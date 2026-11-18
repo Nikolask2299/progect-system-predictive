@@ -44,7 +44,6 @@ public class DecisionService {
             value, alertProperties.getThresholdCritical(), deviceId);
     }
 
-
     @Transactional
     public void findOrCreateAlert(Integer deviceId, EventType eventType, AlertSeverity severity, String message) {
 

@@ -23,6 +23,9 @@ app:
       topic-aggregation: "telemetry-aggregation.raw"
       topic: "telemetry.raw"
       group-id: "ingest-service-pdm"
+    client:
+      decision-service:
+        url: "http://decision-service.pdm.local:9103/api/v1"
 
 eureka:
   client:

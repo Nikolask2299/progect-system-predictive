@@ -11,8 +11,4 @@ public class TelemetryEventListener {
 
     }
 
-    @EventListener
-    public void
-
-
 }

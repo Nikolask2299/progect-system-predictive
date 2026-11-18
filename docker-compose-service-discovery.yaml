@@ -84,6 +84,27 @@ services:
       EUREKA_INSTANCE_HOST: ml-service.pdm.local
       EUREKA_INSTANCE_PORT: "50050"
 
+  decision-service:
+    build: ./decision-service
+    container_name: decision-service-pdm
+    restart: unless-stopped
+    depends_on:
+      - "broker-service"
+      - "eureka-service"
+    ports:
+      - "9103:9103"
+    networks:
+        backend-net: {}
+        database-net: {}
+        eureka-net:
+            aliases:
+                - decision-service.pdm.local
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: decision-service.pdm.local
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: false
+      PREDICTION_SERVICE_HOST: decision-service.pdm.local
+
   prediction-service:
     build: ./prediction-service
     container_name: prediction-service-pdm

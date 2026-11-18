@@ -22,7 +22,7 @@ import java.time.Instant;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/alerts")
+@RequestMapping("/alerts")
 public class AlertController {
 
     private final AlertService alertService;

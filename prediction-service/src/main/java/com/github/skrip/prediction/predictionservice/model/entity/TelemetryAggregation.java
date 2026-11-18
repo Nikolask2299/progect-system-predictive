@@ -46,4 +46,18 @@ public class TelemetryAggregation {
         }
         return null;
     }
+
+    public static TelemetryAggregationDto toDto(TelemetryAggregation telemetryAggregation) {
+        return new TelemetryAggregationDto(
+                    new TelemetryAggregationDto.TelemetryID(
+                            telemetryAggregation.id.sensorId,
+                            telemetryAggregation.id.timestamp
+                    ),
+                    telemetryAggregation.count,
+                    telemetryAggregation.sum,
+                    telemetryAggregation.mean,
+                    telemetryAggregation.max,
+                    telemetryAggregation.min,
+                    telemetryAggregation.stdDev);
+    }
 }

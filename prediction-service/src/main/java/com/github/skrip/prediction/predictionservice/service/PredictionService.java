@@ -1,6 +1,7 @@
 package com.github.skrip.prediction.predictionservice.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
+import com.github.skrip.prediction.predictionservice.client.DecisionRestClient;
 import com.github.skrip.prediction.predictionservice.exception.PredictionError;
 import com.github.skrip.prediction.predictionservice.model.dto.PredictionAggregationDto;
 import com.github.skrip.prediction.predictionservice.model.dto.TelemetryAggregationDto;
@@ -14,6 +15,7 @@ import com.github.skrip.prediction.predictionservice.repository.TelemetryAggrega
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.client.loadbalancer.reactive.WebClientCustomizer;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ public class PredictionService {
     private static final String GET_DEVICE_ID_SQL = "SELECT id, device_id FROM prediction_schema.sensors";
     private static final String GET_SENSOR_ID_SQL = "SELECT id FROM prediction_schema.sensors WHERE device_id = ?";
 
+    private final DecisionRestClient decisionRestClient;
     private final CircuitBreaker circuitBreaker;
     private final PredictionClient predictionClient;
     private final PredictionAggregationRepository aggregationRepository;
@@ -52,10 +55,16 @@ public class PredictionService {
                 .offer(TelemetryAggregation.toEntity(telemetryAggregationDto));
     }
 
+    public List<TelemetryAggregation> getTelemetryAggregationForDeviceId(Integer deviceId, Instant from, Instant to) {
+        List<Integer> sensorIds = jdbcTemplate.queryForList(GET_SENSOR_ID_SQL, Integer.class, deviceId);
+        return telemetryAggregationRepository.findById_SensorIdInAndId_TimestampBetween(sensorIds, from, to);
+    }
+
     @Transactional
     public PredictionAggregationDto getPredictionAggregationDeviceId(Integer deviceId) throws PredictionError {
 
         List<TelemetryAggregation> telemetryAggregationDtos = telemetryAggregationBuffer.getOrDefault(deviceId, new ArrayBlockingQueue<>(1)).stream().toList();
+        sendTelemetryToDecisionService(deviceId, telemetryAggregationDtos);
 
         if (!circuitBreaker.allowRequest()) return getCachePredictionAggregationDeviceId(deviceId);
 
@@ -86,6 +95,17 @@ public class PredictionService {
         telemetryAggregationBuffer.remove(deviceId);
 
         return predictionAggregationDto;
+    }
+
+    private void sendTelemetryToDecisionService(Integer deviceId, List<TelemetryAggregation> telemetryAggregationDtos){
+        if (telemetryAggregationDtos.isEmpty()) {
+            return;
+        }
+
+        telemetryAggregationDtos.forEach(dto ->
+                decisionRestClient.postTelemetryToDecisionService(deviceId, dto.getId().sensorId(), dto.getMean()));
+
+        log.info("Sent {} telemetry aggregations to decision service for deviceId: {}", telemetryAggregationDtos.size(), deviceId);
     }
 
     private DevicePredictionAggregation getDevicePredictionAggregation(Integer deviceId, List<TelemetryAggregation> telemetryAggregation) {
