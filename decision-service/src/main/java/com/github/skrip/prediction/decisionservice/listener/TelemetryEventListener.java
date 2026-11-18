@@ -6,9 +6,4 @@ import org.springframework.stereotype.Component;
 @Component
 public class TelemetryEventListener {
 
-    @EventListener
-    public void onTelemetryEvent(TelemetryEvent event) {
-
-    }
-
 }

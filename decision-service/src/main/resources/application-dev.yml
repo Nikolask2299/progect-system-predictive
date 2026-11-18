@@ -30,6 +30,6 @@ eureka:
 
 pdm:
   alert:
-    threshold-critical: 100.0
+    threshold-critical: 10.0
     expiration-threshold-hours: 24
     expiration-scan-interval-ms: 3600000
