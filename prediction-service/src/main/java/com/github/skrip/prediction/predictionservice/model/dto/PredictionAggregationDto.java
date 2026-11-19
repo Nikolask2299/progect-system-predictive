@@ -6,11 +6,11 @@ import java.time.Instant;
 
 public record PredictionAggregationDto(
         Integer id,
-        Integer device_id,
-        Double rul_hours,
+        Integer deviceId,
+        Double rulHours,
         Double confidence,
-        Double risk_score,
+        Double riskScore,
         PredictionSource source,
-        Instant calculate_at,
-        String maintenance_recommendation
+        Instant calculateAt,
+        String maintenanceRecommendation
 ) {}
