@@ -24,7 +24,7 @@ export function fetchAlerts(
   if (filters.sort) params.set("sort", filters.sort);
 
   const query = params.toString();
-  return request<Page<AlertDto>>(`/alerts${query ? "?" + query : ""}`);
+  return request<Page<AlertDto>>(`/decision-service/api/v1/alerts${query ? "?" + query : ""}`);
 }
 
 /**
@@ -32,7 +32,7 @@ export function fetchAlerts(
  * Детали алерта с историей.
  */
 export function fetchAlertDetails(id: number | string): Promise<AlertDetailsDto> {
-  return request<AlertDetailsDto>(`/alerts/${id}`);
+  return request<AlertDetailsDto>(`/decision-service/api/v1/alerts/${id}`);
 }
 
 /**
@@ -41,7 +41,7 @@ export function fetchAlertDetails(id: number | string): Promise<AlertDetailsDto>
  * Только для роли OPERATOR.
  */
 export function confirmAlert(id: number | string): Promise<AlertDto> {
-  return request<AlertDto>(`/alerts/${id}/confirm`, { method: "POST" });
+  return request<AlertDto>(`/decision-service/api/v1/alerts/${id}/confirm`, { method: "POST" });
 }
 
 /**
@@ -50,7 +50,7 @@ export function confirmAlert(id: number | string): Promise<AlertDto> {
  * Только для роли ENGINEER.
  */
 export function startWork(id: number | string): Promise<AlertDto> {
-  return request<AlertDto>(`/alerts/${id}/start_work`, { method: "POST" });
+  return request<AlertDto>(`/decision-service/api/v1/alerts/${id}/start_work`, { method: "POST" });
 }
 
 /**
@@ -59,7 +59,7 @@ export function startWork(id: number | string): Promise<AlertDto> {
  * Только для роли ENGINEER.
  */
 export function resolveAlert(id: number | string): Promise<AlertDto> {
-  return request<AlertDto>(`/alerts/${id}/resolve`, { method: "POST" });
+  return request<AlertDto>(`/decision-service/api/v1/alerts/${id}/resolve`, { method: "POST" });
 }
 
 /**
@@ -69,7 +69,7 @@ export function resolveAlert(id: number | string): Promise<AlertDto> {
  */
 export function markFalsePositive(id: number | string): Promise<AlertDto> {
   return request<AlertDto>(
-    `/alerts/${id}/mark_false_positive`,
+    `/decision-service/api/v1/alerts/${id}/mark_false_positive`,
     { method: "POST" }
   );
 }

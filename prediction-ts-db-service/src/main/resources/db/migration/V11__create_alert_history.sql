@@ -1,9 +1,12 @@
+CREATE TYPE alert_event AS ENUM ('CONFIRM', 'START_WORK', 'RESOLVE', 'MARK_FALSE', 'TIMEOUT');
+
 CREATE TABLE alert_history (
     id BIGSERIAL PRIMARY KEY,
     alert_id BIGINT NOT NULL REFERENCES alerts(id) ON DELETE CASCADE,
     from_status alert_status,
     to_status alert_status NOT NULL,
     actor_user_id BIGINT REFERENCES users(id),
+    event alert_event NOT NULL DEFAULT 'CONFIRM',
     comment TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

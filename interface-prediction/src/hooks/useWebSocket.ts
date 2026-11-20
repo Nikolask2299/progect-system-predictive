@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import type { AlertCreatedEvent } from "../api/types";
 
 const DEFAULT_WS_URL =
-  import.meta.env.VITE_WS_URL || "ws://localhost:8082";
+  import.meta.env.VITE_WS_URL || "ws://localhost:8080";
 
 /**
  * Хук для подписки на WebSocket-события новых алертов.

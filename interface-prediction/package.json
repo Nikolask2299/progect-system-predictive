@@ -7,13 +7,17 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "eureka": "node src/api/eureka-config.js",
+    "start": "serve -s dist -p ${HTTP_PORT:-80} & node src/api/eureka-config.js"
   },
   "dependencies": {
+    "eureka-js-client": "^4.5.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.6",
-    "recharts": "^3.11.0"
+    "recharts": "^3.11.0",
+    "serve": "^14.2.0"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

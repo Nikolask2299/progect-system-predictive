@@ -10,7 +10,7 @@ import type {
  * Список всех устройств.
  */
 export function fetchDeviceInfoList(): Promise<DeviceDto[]> {
-  return request<DeviceDto[]>("/predictions/device-info-list");
+  return request<DeviceDto[]>("/prediction-service/api/v1/predictions/device-info-list");
 }
 
 /**
@@ -21,7 +21,7 @@ export function fetchPrediction(
   deviceId: number | string
 ): Promise<PredictionAggregationDto> {
   return request<PredictionAggregationDto>(
-    `/predictions/${deviceId}`
+    `/prediction-service/api/v1/predictions/${deviceId}`
   );
 }
 
@@ -35,6 +35,6 @@ export function fetchTelemetry(
   to: string
 ): Promise<TelemetryAggregationDto[]> {
   return request<TelemetryAggregationDto[]>(
-    `/predictions/telemetry/${deviceId}?from=${from}&to=${to}`
+    `/prediction-service/api/v1/predictions/telemetry/${deviceId}?from=${from}&to=${to}`
   );
 }
